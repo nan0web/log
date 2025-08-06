@@ -30,6 +30,8 @@ class NoLogger extends Logger {
 	console
 	constructor(options = {}) {
 		super(options)
+		this.icons = false
+		this.chromo = true
 		this.console = new NoConsole()
 	}
 	output() {

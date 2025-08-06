@@ -1,15 +1,27 @@
 {
-	"name": "@nanoweb/log",
+	"name": "@nan0web/log",
 	"version": "1.0.0",
-	"description": "",
+	"description": "A simple logger utility for nan0web applications",
 	"main": "src/index.js",
 	"type": "module",
 	"scripts": {
-		"test": "node --test src/**/*.test.js"
+		"test": "node --test",
+		"build": "tsc",
+		"dev": "node src/index.js"
 	},
-	"keywords": [],
+	"keywords": [
+		"abstract",
+		"agnostic",
+		"log",
+		"nan0"
+	],
 	"author": "ЯRаСлав YaRaSlove <support@yaro.page>",
 	"license": "ISC",
 	"packageManager": "pnpm@10.11.0",
-	"dependencies": {}
+	"dependencies": {},
+	"types": "types/index.d.ts",
+	"files": [
+		"src",
+		"types"
+	]
 }

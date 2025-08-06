@@ -1,8 +1,8 @@
-import { suite, describe, it, beforeEach } from 'node:test'
+import { suite, describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import NoLogger from './NoLogger.js'
 
-suite('Logger', () => {
+suite('NoLogger', () => {
 	/** @type {NoLogger} */
 	let logger
 
@@ -58,6 +58,18 @@ suite('Logger', () => {
 
 			const output = logger.output()
 			assert.ok(output.length === 0)
+		})
+	})
+
+	describe('output handling', () => {
+		it('should clear logs when clear is called', () => {
+			logger = new NoLogger({ level: 'debug' })
+			logger.debug('test debug')
+			logger.info('test info')
+
+			assert.equal(logger.output().length, 2)
+			logger.console.clear()
+			assert.equal(logger.output().length, 0)
 		})
 	})
 })
