@@ -89,7 +89,7 @@ Create a new logger instance with optional configuration.
 | `info(...args)`   | Log info message      |
 | `warn(...args)`   | Log warning message   |
 | `error(...args)`  | Log error message     |
-| `success(...args)`| Log success message   |
+| `success(...args)`| Log success message, same level as info, but different format   |
 | `log(...args)`    | Log general message   |
 
 ### Static Utilities
