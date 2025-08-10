@@ -1,39 +1,25 @@
 import Logger from "./Logger.js"
-
-class NoConsole {
-	#logs = []
-	clear() {
-		this.#logs = []
-	}
-	debug(...args) {
-		this.#logs.push(["debug", ...args])
-	}
-	info(...args) {
-		this.#logs.push(["info", ...args])
-	}
-	warn(...args) {
-		this.#logs.push(["warn", ...args])
-	}
-	error(...args) {
-		this.#logs.push(["error", ...args])
-	}
-	log(...args) {
-		this.#logs.push(["log", ...args])
-	}
-	output() {
-		return this.#logs
-	}
-}
+import NoConsole from "./NoConsole.js"
 
 class NoLogger extends Logger {
 	/** @type {NoConsole} */
 	console
+
+	/**
+	 * Creates a new NoLogger instance.
+	 * @param {Object} [options={}] - The options for the logger
+	 */
 	constructor(options = {}) {
 		super(options)
 		this.icons = false
 		this.chromo = true
 		this.console = new NoConsole()
 	}
+
+	/**
+	 * Returns the logged output.
+	 * @returns {Array<Array<*>>} The array of logged messages
+	 */
 	output() {
 		return this.console.output()
 	}

@@ -1,3 +1,5 @@
 chat/
 node_modules/
 me.md
+test.cpuprofile
+/playground/logs.txt

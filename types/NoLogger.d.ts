@@ -1,18 +1,17 @@
 export default NoLogger;
 declare class NoLogger extends Logger {
-    constructor(options?: {});
+    /**
+     * Creates a new NoLogger instance.
+     * @param {Object} [options={}] - The options for the logger
+     */
+    constructor(options?: any);
     /** @type {NoConsole} */
     console: NoConsole;
-    output(): any[];
+    /**
+     * Returns the logged output.
+     * @returns {Array<Array<*>>} The array of logged messages
+     */
+    output(): Array<Array<any>>;
 }
 import Logger from "./Logger.js";
-declare class NoConsole {
-    clear(): void;
-    debug(...args: any[]): void;
-    info(...args: any[]): void;
-    warn(...args: any[]): void;
-    error(...args: any[]): void;
-    log(...args: any[]): void;
-    output(): any[];
-    #private;
-}
+import NoConsole from "./NoConsole.js";

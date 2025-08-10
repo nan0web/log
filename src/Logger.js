@@ -1,40 +1,48 @@
-class LoggerFormat {
-	/** @type {string} */
-	icon
-	/** @type {string} */
-	color
-	constructor(input = {}) {
-		const {
-			icon = "",
-			color = "",
-		} = input
-		this.icon = String(icon)
-		this.color = String(color)
-	}
-	/**
-	 * @param {object} input
-	 * @returns {LoggerFormat}
-	 */
-	static from(input) {
-		if (input instanceof LoggerFormat) return input
-		return new LoggerFormat(input)
-	}
-}
+import LoggerFormat from "./LoggerFormat.js"
+import Console from "./Console.js"
+import { empty } from "@nan0web/types"
+
+/**
+ * @typedef {Object} LoggerOptions
+ * @property {string} [level='info'] - Minimum log level to output (debug|info|warn|error|silent)
+ * @property {Console} [console=console] - Console instance to use for output
+ * @property {boolean} [icons=false] - Whether to show icons
+ * @property {boolean} [chromo=false] - Whether to use colors
+ * @property {string|boolean} [time=false] - Time format for logs
+ * @property {boolean} [spent=false] - Whether to log spent time
+ * @property {Function} [stream=null] - Stream function for output
+ * @property {Array} [formats=[]] - Format map array for different levels with icons/colors config
+ */
 
 /**
  * Logger class for handling different log levels
  * Supports debug, info, warn, error, and log methods
  */
 class Logger {
-	// @todo fix codes for
+	static LOGO = [
+		"__   _ _______ __   _     _  _  _ _______ ______ ",
+		"| \\  | |_____| | \\  |     |  |  | |______ |_____] ",
+		"|  \\_| |     | |  \\_|  •  |__|__| |______ |_____] ",
+		"                                                 ",
+		"",
+	].join("\n")
 	static DIM = '\x1b[2m'
-	// @todo fix codes for
-	static YELLOW = '\x1b[33m'
-	// @todo fix codes for
-	static BLUE = '\x1b[34m'
-	static PURPLE = '\x1b[35m'
+	static BLACK = "\x1b[30m"
 	static RED = '\x1b[31m'
 	static GREEN = '\x1b[32m'
+	static YELLOW = '\x1b[33m'
+	static BLUE = '\x1b[34m'
+	static MAGENTA = '\x1b[35m'
+	static CYAN = '\x1b[36m'
+	static WHITE = '\x1b[37m'
+	static BG_BLACK = '\x1b[40m'
+	static BG_RED = '\x1b[41m'
+	static BG_GREEN = '\x1b[42m'
+	static BG_YELLOW = '\x1b[43m'
+	static BG_BLUE = '\x1b[44m'
+	static BG_MAGENTA = '\x1b[45m'
+	static BG_CYAN = '\x1b[46m'
+	static BG_WHITE = '\x1b[47m'
 	static RESET = '\x1b[0m'
 	static LEVELS = {
 		debug: 0,
@@ -43,14 +51,29 @@ class Logger {
 		error: 3,
 		silent: 4
 	}
-	// @todo add other properties
+	/** @type {string} */
+	level
+	/** @type {Console} */
+	console
+	/** @type {boolean} */
+	icons
+	/** @type {boolean} */
+	chromo
 	/** @type {Map<string, LoggerFormat>} */
 	formats
+	/** @type {number} */
+	at
+	/** @type {boolean|number} */
+	spent
+	/** @type {string|boolean} */
+	time
+	/** @type {Function|null} */
+	stream
+	/** @type {string[]} */
+	_previousLines = []
+
 	/**
-	 * @param {object | string} options - Logger configuration or level
-	 * @param {object} options
-	 * @param {string} [options.level='info'] - Minimum log level to output (debug|info|warn|error|silent)
-	 * @param {Console} [options.console=console] - Console instance to use for output
+	 * @param {string | LoggerOptions} options
 	 */
 	constructor(options = {}) {
 		if ("string" === typeof options) {
@@ -61,9 +84,12 @@ class Logger {
 			console: consoleInstance = console,
 			icons = false,
 			chromo = false,
+			time = false,
+			spent = false,
+			stream = null,
 			formats = [
 				["debug", { icon: "•", color: Logger.DIM }],
-				["log", { icon: "¡" }],
+				["log", { icon: "•" }],
 				["info", { icon: "ℹ" }],
 				["warn", { icon: "∆", color: Logger.YELLOW }],
 				["error", { icon: "!", color: Logger.RED }],
@@ -71,10 +97,16 @@ class Logger {
 			]
 		} = options
 
-		this.console = consoleInstance
+		// @ts-ignore
+		this.console = new Console({ console: consoleInstance })
 		this.level = level
 		this.icons = Boolean(icons)
 		this.chromo = Boolean(chromo)
+		this.time = time
+		this.spent = Boolean(spent)
+		this.stream = stream
+		this.at = Date.now()
+
 		this.formats = new Map(formats)
 		this.formats.forEach(
 			(opts, target) => this.formats.set(target, LoggerFormat.from(opts))
@@ -82,6 +114,12 @@ class Logger {
 		this.currentLevel = Logger.LEVELS[this.level] ?? 1
 	}
 
+	/**
+	 * Prepare arguments with formatting for specified log level
+	 * @param {string} target - Log level target
+	 * @param {...any} args - Arguments to format
+	 * @returns {string}
+	 */
 	_argsWith(target, ...args) {
 		let format = new LoggerFormat(this.formats.get(target))
 		if (!this.icons) format.icon = ""
@@ -95,7 +133,7 @@ class Logger {
 				debug: "•",
 				log: "•",
 				info: "ℹ",
-				warn: "▲",
+				warn: "∆",
 				error: "!",
 				success: "✓",
 			}[target] || "•"
@@ -110,16 +148,62 @@ class Logger {
 				success: Logger.GREEN,
 			}[target] || ""
 		}
-		if (format.icon) args.unshift(format.icon)
-		if (!this.chromo && format.color) {
-			args.unshift(format.color)
-			args.push(Logger.RESET)
+
+		const logArgs = []
+
+		// Add timestamp if enabled
+		if (this.time) {
+			const timestamp = new Date().toISOString()
+			logArgs.push(timestamp)
 		}
-		return args
+
+		// Add spent time if enabled
+		if (this.spent !== false) {
+			logArgs.push(Logger.spent(this.at, true === this.spent ? 3 : this.spent))
+			this.at = Date.now()
+		}
+
+		const prefix = []
+
+		if (format.icon) logArgs.push(format.icon)
+		if (!this.chromo && (format.color || format.bgColor)) {
+			if (format.bgColor) prefix.unshift(format.bgColor)
+			if (format.color) prefix.unshift(format.color)
+		}
+		logArgs.push(...args)
+		return prefix.length ? prefix + logArgs.join(" ") + Logger.RESET : logArgs.join(" ")
 	}
 
+	/**
+	 * Set format for a log level
+	 * @param {string} target - Log level target
+	 * @param {object} opts - Format options
+	 */
 	setFormat(target, opts) {
 		this.formats.set(target, LoggerFormat.from(opts))
+	}
+
+	/**
+	 * Set stream function for output
+	 * @param {Function} streamFunction - Function to handle streaming output
+	 */
+	setStream(streamFunction) {
+		this.stream = streamFunction
+	}
+
+	/**
+	 * Log to a stream. Use setStream() to define stream function.
+	 * @param {string} str - Arguments to log
+	 */
+	async broadcast(str) {
+		if (!this.stream) return
+		try {
+			await this.stream(str)
+			return
+		} catch (error) {
+			// Fallback to file writing or console error if stream fails
+			this.error("Failed to write to stream:", error)
+		}
 	}
 
 	/**
@@ -128,7 +212,10 @@ class Logger {
 	 */
 	debug(...args) {
 		if (this.currentLevel <= 0) {
-			this.console.debug(...this._argsWith("debug", ...args))
+			const str = this._argsWith("debug", ...args)
+			this.console.debug(str)
+			this._storeLine(str)
+			this.broadcast(str)
 		}
 	}
 
@@ -138,7 +225,10 @@ class Logger {
 	 */
 	info(...args) {
 		if (this.currentLevel <= 1) {
-			this.console.info(...this._argsWith("info", ...args))
+			const str = this._argsWith("info", ...args)
+			this.console.info(str)
+			this._storeLine(str)
+			this.broadcast(str)
 		}
 	}
 
@@ -148,7 +238,10 @@ class Logger {
 	 */
 	warn(...args) {
 		if (this.currentLevel <= 2) {
-			this.console.warn(...this._argsWith("warn", ...args))
+			const str = this._argsWith("warn", ...args)
+			this.console.warn(str)
+			this._storeLine(str)
+			this.broadcast(str)
 		}
 	}
 
@@ -158,13 +251,23 @@ class Logger {
 	 */
 	error(...args) {
 		if (this.currentLevel <= 3) {
-			this.console.error(...this._argsWith("error", ...args))
+			const str = this._argsWith("error", ...args)
+			this.console.error(str)
+			this._storeLine(str)
+			this.broadcast(str)
 		}
 	}
 
+	/**
+	 * Log success info message
+	 * @param {...any} args - Arguments to log
+	 */
 	success(...args) {
 		if (this.currentLevel <= 1) {
-			this.console.info(...this._argsWith("success", ...args))
+			const str = this._argsWith("success", ...args)
+			this.console.info(str)
+			this._storeLine(str)
+			this.broadcast(str)
 		}
 	}
 
@@ -174,7 +277,10 @@ class Logger {
 	 */
 	log(...args) {
 		if (this.currentLevel <= 1) {
-			this.console.log(...this._argsWith("log", ...args))
+			const str = this._argsWith("log", ...args)
+			this.console.log(str)
+			this._storeLine(str)
+			this.broadcast(str)
 		}
 	}
 
@@ -190,8 +296,10 @@ class Logger {
 		if (typeof input === 'string') return new Logger({ level: input })
 		return new Logger(input)
 	}
+
 	/**
-	 * @param {string[]} argv
+	 * Detect log level from command line arguments
+	 * @param {string[]} argv - Command line arguments
 	 * @returns {string | undefined} Level
 	 */
 	static detectLevel(argv = []) {
@@ -203,16 +311,353 @@ class Logger {
 		}
 		return undefined
 	}
+
 	/**
-	 * @param {string | object} name
-	 * @param {any | undefined} value
-	 * @returns
+	 * Create a LoggerFormat instance from input
+	 * @param {string | object} name - Format name or options object
+	 * @param {any | undefined} value - Format value (if name is a string)
+	 * @returns {LoggerFormat}
 	 */
 	static createFormat(name, value) {
 		if ("string" === typeof name) {
 			return new LoggerFormat({ [name]: value })
 		}
 		return new LoggerFormat(name)
+	}
+
+	/**
+	 * Style a value with background and text colors
+	 * @param {any} value - Value to style
+	 * @param {object} styleOptions - Styling options
+	 * @param {string} [styleOptions.bgColor] - Background color
+	 * @param {string} [styleOptions.color] - Text color
+	 * @returns {string} - Styled value as a string
+	 */
+	static style(value, styleOptions = {}) {
+		if ("string" === typeof value) value = value.split("\n")
+		if (!Array.isArray(value)) value = String(value).split("\n")
+		const { bgColor, color } = styleOptions
+		const styledValue = []
+
+		value.map(String).forEach(row => {
+			if (color) styledValue.push(Logger[color.toUpperCase()] || color)
+			if (bgColor) styledValue.push(Logger[`BG_${bgColor.toUpperCase()}`] || bgColor)
+			styledValue.push(row)
+			styledValue.push(Logger.RESET)
+			styledValue.push("\n")
+		})
+		return styledValue.join("").slice(0, -1)
+	}
+
+	/**
+	 * Calculate progress percentage
+	 * @param {number} i - Current progress value
+	 * @param {number} len - Total progress length
+	 * @param {number} fixed - Number of decimal places to fix
+	 * @returns {string} - Progress percentage as a string
+	 */
+	static progress(i, len, fixed = 1) {
+		return (100 * i / len).toFixed(fixed)
+	}
+
+	/**
+	 * Calculate time elapsed since checkpoint
+	 * @param {number} checkpoint - Timestamp to calculate from
+	 * @param {number} fixed - Number of decimal places to fix
+	 * @returns {string} - Time elapsed in seconds as a string
+	 */
+	static spent(checkpoint, fixed = 2) {
+		return ((Date.now() - checkpoint) / 1_000).toFixed(fixed)
+	}
+
+	/**
+	 * Format time duration
+	 * @param {number} duration - Duration in milliseconds
+	 * @param {string} format - Format string (e.g., DD HH:mm:ss.SSS)
+	 * @returns {string} - Formatted time string
+	 */
+	static toTime(duration, format = 'DD HH:mm:ss.SSS') {
+		const dur = new Date(duration)
+		const base = new Date(0)
+		base.setMilliseconds(dur.getMilliseconds())
+		base.setSeconds(dur.getSeconds())
+		base.setMinutes(dur.getMinutes())
+		base.setHours(dur.getHours())
+
+		const days = String(Math.floor(duration / (24 * 60 * 60 * 1_000))).padStart(2, '0')
+
+		if (format.includes('DD')) {
+			const timeFormat = format.replace('DD', '')
+			const timePart = base.toISOString().substr(11, 12)
+			return format.replace('DD', days).replace(timeFormat.trim(), timePart)
+		} else {
+			return base.toISOString().substr(11, 12)
+		}
+	}
+
+	/**
+	 * Format table data
+	 * @param {Array<any>} data - Table data
+	 * @param {string[]} columns - Columns to filter
+	 * @param {object} options - Format options
+	 * @param {Array<number>} [options.widths=[]] - Column widths
+	 * @param {string} [options.space=" "] - Space character
+	 * @param {number} [options.padding=1] - Padding width
+	 * @param {string|string[]} [options.aligns="left"] - Text aligns
+	 * @param {string} [options.prefix=""] - Text prefix
+	 * @param {boolean} [options.silent=false] - If silent no output provided
+	 * @param {number} [options.border=0]
+	 * @param {number} [options.headBorder=0]
+	 * @param {number} [options.footBorder=0]
+	 * @returns {string[]} - Formatted table rows
+	 */
+	table(data, columns, options = {}) {
+		const {
+			widths = [], space = ' ', padding = 1, aligns = 'left', prefix = "",
+			silent = false, border = 0, headBorder = 0, footBorder = 0
+		} = options
+		if (!Array.isArray(data) || data.length === 0) return []
+
+		// Normalize data
+		let rows
+		if (empty(columns)) {
+			rows = data.map(row =>
+				Array.isArray(row) ? row.map(String) : Object.values(row).map(String)
+			)
+		} else {
+			// Filter columns if specified
+			rows = data.map(row => {
+				if (Array.isArray(row)) {
+					return columns.map(col => String(row[columns.indexOf(col)]))
+				} else {
+					return columns.map(col => String(row[col]))
+				}
+			})
+		}
+
+		const cols = Math.max(...rows.map(r => r.length))
+
+		// Normalize aligns to array
+		const alignArr = Array.isArray(aligns)
+			? aligns
+			: Array(cols).fill(aligns)
+
+		// Calculate column widths
+		for (let i = 0; i < cols; i++) {
+			const max = Math.max(
+				...(rows.map(row => padding + (row[i]?.length || 0))),
+				widths[i] || 0
+			)
+			widths[i] = max
+		}
+
+		const result = []
+		// Format and print each row
+		for (const row of rows) {
+			const line = row.map((cell = '', i) => {
+				const width = widths[i]
+				const align = alignArr[i] || 'left'
+				const padLen = Math.max(0, width - cell.length)
+
+				if (align === 'right') {
+					if (i === row.length - 1) {
+						return space.repeat(padLen) + cell
+					}
+					return space.repeat(Math.max(0, padLen - padding)) + cell + space.repeat(padding)
+				}
+				if (align === 'center') {
+					const left = Math.floor(padLen / 2)
+					const right = padLen - left
+					return space.repeat(left) + cell + space.repeat(right)
+				}
+				// default to left
+				return cell + space.repeat(padLen)
+			}).join('')
+			result.push(line)
+		}
+
+		// Add header if columns are specified
+		if (!empty(columns)) {
+			const header = columns.map((col, i) => {
+				const width = widths[i]
+				const align = alignArr[i] || 'left'
+				const padLen = width - col.length
+
+				if (align === 'right') return space.repeat(padLen) + col
+				if (align === 'center') {
+					const left = Math.floor(padLen / 2)
+					const right = padLen - left
+					return space.repeat(left) + col + space.repeat(right)
+				}
+				// default to left
+				return col + space.repeat(padLen)
+			}).join('')
+			result.unshift(header)
+		}
+
+		// Add borders
+		if (border > 0) {
+			const borderLine = "-".repeat(Math.max(...result.map(r => r.length)) + prefix.length)
+			// @todo add vertical |
+			result.unshift(borderLine)
+			result.push(borderLine)
+		}
+
+		if (headBorder > 0 && !empty(columns)) {
+			// @todo add vertical |
+			const headerLength = result[0].length
+			const headBorderLine = "-".repeat(headerLength)
+			result.splice(1 + border, 0, headBorderLine)
+		}
+
+		if (footBorder > 0) {
+			// @todo add vertical |
+			const resultLength = result.length
+			const footBorderLine = "-".repeat(result[resultLength - 1].length)
+			result.splice(resultLength - 1, 0, footBorderLine)
+		}
+
+		if (!silent) {
+			for (let row of result) {
+				if (prefix) row = prefix + row
+				const formatted = this._argsWith("info", row)
+				this.console.info(formatted)
+				this._storeLine(formatted)
+				this.broadcast(formatted)
+			}
+		}
+		return result
+	}
+
+	/**
+	 * Move cursor up in the terminal
+	 * ```js
+	 * const width = 999
+	 * for (let i = 0; i < width; i++) {
+	 *   logger.clearLine(logger.cursorUp())
+	 *   logger.info(Logger.bar(i, width))
+	 *   await sleep(33)
+	 * }
+	 * ```
+	 * @param {number} lines - Number of lines to move up
+	 * @returns {string} - Cursor up sequence string
+	 */
+	cursorUp(lines = 1) {
+		return `\x1b[${lines}A`
+	}
+
+	/**
+	 * Move cursor down in the terminal
+	 * ```js
+	 * const logger = new Logger()
+	 * logger.info("This is a progress")
+	 * logger.info(logger.cursorDown())
+	 * logger.info("Under the previous line")
+	 * ```
+	 * @param {number} lines - Number of lines to move down
+	 * @returns {string} - Cursor down sequence string
+	 */
+	cursorDown(lines = 1) {
+		return `\x1b[${lines}B`
+	}
+
+	/**
+	 * Write string directly to stdout
+	 * @param {string} str - String to write
+	 */
+	write(str) {
+		if ("undefined" === typeof process?.stdout?.write) {
+			this.console.info(str)
+			return
+		}
+		process.stdout.write(str)
+	}
+
+	/**
+	 * Clear the entire terminal screen
+	 */
+	clear() {
+		if ("undefined" === typeof process?.stdout) {
+			return this.console.clear()
+		}
+		this.write('\x1b[2J\x1b[0;0H')
+	}
+
+	/**
+	 * Clear the current line in terminal.
+	 * For progress use it with logger.cursorUp()
+	 * ```js
+	 * logger.clearLine(logger.cursorUp())
+	 * logger.info("The same line")
+	 * ```
+	 * @param {string} str - String to write before clearing
+	 */
+	clearLine(str = "") {
+		if ("undefined" === typeof process?.stdout) {
+			return this.console.clear()
+		}
+		if ("" !== str) this.write(str)
+		this.write('\x1b[2K\r')
+	}
+
+	/**
+	 * Returns array is of the type `[numColumns, numRows]` where `numColumns` and
+	 * `numRows` represent the number of columns and rows in the corresponding TTY.
+	 * @returns {number[]}
+	 */
+	getWindowSize() {
+		if ("undefined" === typeof process?.stdout?.getWindowSize) {
+			return [80, 40]
+		}
+		return process.stdout.getWindowSize()
+	}
+
+	/**
+	 * Erase the previous line by covering it with spaces or specified character
+	 * @param {string} char - Character to use for erasing (default: space)
+	 * @returns {string} - Erase sequence string
+	 */
+	erase(char = " ") {
+		if (this._previousLines.length === 0) {
+			return ""
+		}
+
+		const lastLine = this._previousLines[this._previousLines.length - 1]
+		if (!lastLine) {
+			return ""
+		}
+		const windowSize = this.getWindowSize()
+		const columns = windowSize[0]
+
+		return char.repeat(Math.max(0, columns - lastLine.length))
+	}
+
+	/**
+	 * Store the last output line for potential erasing
+	 * @param {string} line - The line that was just output
+	 * @private
+	 */
+	_storeLine(line) {
+		this._previousLines.push(line)
+		if (this._previousLines.length > 10) {
+			this._previousLines.shift()
+		}
+	}
+
+	/**
+	 * Create a progress bar
+	 * @param {number} i - Current progress index
+	 * @param {number} len - Total progress length
+	 * @param {number} width - Progress bar width
+	 * @param {string} char - Progress bar character
+	 * @param {string} space - Space character
+	 * @returns {string} - Progress bar string
+	 */
+	static bar(i, len, width = 12, char = '█', space = '·') {
+		const percent = ((i + 1) / len) * 100
+		const filled = Math.floor((percent / 100) * width)
+		const suffix = ` ${percent.toFixed(2)}%`
+		return `${char.repeat(filled)}${space.repeat(Math.max(0, width - filled))}${suffix}`
 	}
 }
 
