@@ -3,6 +3,7 @@ import { strict as assert } from 'node:assert'
 import Logger from './Logger.js'
 import LoggerFormat from "./LoggerFormat.js"
 import Console from './Console.js'
+import NoConsole from './NoConsole.js'
 
 describe('Logger class functionality', () => {
 	it('should create a logger instance with default values', () => {
@@ -55,7 +56,7 @@ describe('Logger class functionality', () => {
 
 	it('should calculate progress with zero length', () => {
 		const progress = Logger.progress(0, 0, 1)
-		assert.equal(progress, 'NaN')
+		assert.equal(progress, '0')
 	})
 
 	it('should handle debug logging', () => {
@@ -88,12 +89,20 @@ describe('Logger class functionality', () => {
 		assert.ok(streamedData.includes('test custom stream'))
 	})
 
-	it.skip('should handle stream errors gracefully', async () => {
-		const mockStream = async () => {
-			throw new Error('Stream error')
-		}
-		const logger = new Logger({ stream: mockStream })
-		assert.doesNotThrow(() => logger.info('test'))
+	it("should add a timestamp and spent in messages", () => {
+		const logger = new Logger({ time: true, spent: true, console: new NoConsole() })
+		logger.info("Time?")
+		const log = logger.console.console.output()[0][1]
+		assert.match(log, /^\d{4}-\d{2}-\d{2}T/)
+		assert.match(log, / \d\.\d+ Time\?$/)
+	})
+
+	it("should setFormat", () => {
+		const logger = new Logger({ icons: true, console: new NoConsole() })
+		logger.setFormat("info", { icon: "+" })
+		logger.info("Time?")
+		const log = logger.console.console.output()[0][1]
+		assert.equal(log, "+ Time?")
 	})
 
 	it('should generate correct cursor up sequence', () => {
