@@ -357,6 +357,7 @@ class Logger {
 	 * @returns {string} - Progress percentage as a string
 	 */
 	static progress(i, len, fixed = 1) {
+		if (len === 0) return '0'
 		return (100 * i / len).toFixed(fixed)
 	}
 

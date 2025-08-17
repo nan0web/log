@@ -54,4 +54,19 @@ test('Console class functionality', async (t) => {
 		assert.doesNotThrow(() => consoleInstance.table([]))
 		assert.doesNotThrow(() => consoleInstance.trace())
 	})
+
+	// Additional tests to improve coverage
+	await t.test('should profile with label', () => {
+		const mockConsole = {
+			profile: (label) => { mockConsole.profileCalledWith = label },
+			profileEnd: (label) => { mockConsole.profileEndCalledWith = label }
+		}
+		const consoleInstance = new Console({ console: mockConsole })
+
+		consoleInstance.profile('test')
+		assert.equal(mockConsole.profileCalledWith, 'test')
+
+		consoleInstance.profileEnd('test')
+		assert.equal(mockConsole.profileEndCalledWith, 'test')
+	})
 })
