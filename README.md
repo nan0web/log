@@ -1,4 +1,4 @@
-# @nan0web/logger
+# @nan0web/log
 
 A cross-platform Logger class that wraps console methods for both Node.js and browsers.
 Provides a consistent interface for logging across environments and supports streaming to files.

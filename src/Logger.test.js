@@ -26,10 +26,7 @@ describe('Logger class functionality', () => {
 	})
 
 	it('should create a logger instance with stream function', () => {
-		const mockStream = async (data) => {
-			// Mock implementation
-			return data
-		}
+		const mockStream = async (data) => data
 		const logger = new Logger({
 			stream: mockStream
 		})
@@ -159,13 +156,13 @@ describe('Logger class functionality', () => {
 			{ name: 'Jane', age: 25 }
 		]
 		const columns = ['name', 'age']
-		
+
 		// Mock console.info to capture output
 		const loggedLines = []
 		logger.console.info = (...args) => loggedLines.push(args[0])
-		
+
 		const result = logger.table(data, columns, { border: 1, headBorder: 1 })
-		
+
 		// Check that borders are added
 		assert.ok(result[0].startsWith('----')) // Top border
 		assert.ok(result[2].startsWith('----')) // Head border

@@ -68,6 +68,14 @@ class NoConsole extends Console {
 	output() {
 		return this.#logs
 	}
+	/**
+	 * @param {object} input
+	 * @returns {NoConsole}
+	 */
+	static from(input) {
+		if (input instanceof NoConsole) return input
+		return new NoConsole(input)
+	}
 }
 
 export default NoConsole

@@ -1,5 +1,5 @@
 {
-	"name": "@nan0web/logger",
+	"name": "@nan0web/log",
 	"version": "1.0.0",
 	"description": "A cross-platform Logger class that wraps console methods for both Node.js and browsers with consistent interface and streaming support.",
 	"main": "src/index.js",
@@ -8,7 +8,8 @@
 		"build": "tsc",
 		"dev": "node src/index.js",
 		"prepare": "husky",
-		"test": "node --test"
+		"test": "node --test",
+		"test:coverage": "node --test --experimental-test-coverage --test-coverage-include=src/*.js"
 	},
 	"repository": {
 		"type": "git",

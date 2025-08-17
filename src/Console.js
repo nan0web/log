@@ -2,7 +2,7 @@
  * A cross-platform Console class that wraps console methods for both Node.js and browsers.
  * Provides a consistent interface for logging across environments and supports streaming to files.
  */
-class Console {
+class LogConsole {
 	/**
 	 * Creates a new Console instance.
 	 * @param {Object} [options={}] - Console configuration options
@@ -233,4 +233,4 @@ class Console {
 	}
 }
 
-export default Console
+export default LogConsole

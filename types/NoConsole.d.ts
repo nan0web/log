@@ -5,6 +5,11 @@ export default NoConsole;
  */
 declare class NoConsole extends Console {
     /**
+     * @param {object} input
+     * @returns {NoConsole}
+     */
+    static from(input: object): NoConsole;
+    /**
      * Returns all stored logs.
      * @returns {Array<Array<*>>} An array of log entries, each containing the log level and arguments
      */

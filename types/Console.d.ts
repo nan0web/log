@@ -1,9 +1,9 @@
-export default Console;
+export default LogConsole;
 /**
  * A cross-platform Console class that wraps console methods for both Node.js and browsers.
  * Provides a consistent interface for logging across environments and supports streaming to files.
  */
-declare class Console {
+declare class LogConsole {
     /**
      * Creates a new Console instance.
      * @param {Object} [options={}] - Console configuration options
@@ -12,7 +12,7 @@ declare class Console {
     constructor(options?: {
         console?: Console | undefined;
     } | undefined);
-    console: any;
+    console: Console;
     /**
      * Logs a debug message
      * @param {...any} args - Arguments to log

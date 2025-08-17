@@ -2,9 +2,9 @@ export default NoLogger;
 declare class NoLogger extends Logger {
     /**
      * Creates a new NoLogger instance.
-     * @param {Object} [options={}] - The options for the logger
+     * @param {import("./Logger.js").LoggerOptions} [options={}] - The options for the logger
      */
-    constructor(options?: any);
+    constructor(options?: import("./Logger.js").LoggerOptions | undefined);
     /** @type {NoConsole} */
     console: NoConsole;
     /**

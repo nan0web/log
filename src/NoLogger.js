@@ -7,13 +7,14 @@ class NoLogger extends Logger {
 
 	/**
 	 * Creates a new NoLogger instance.
-	 * @param {Object} [options={}] - The options for the logger
+	 * @param {import("./Logger.js").LoggerOptions} [options={}] - The options for the logger
 	 */
 	constructor(options = {}) {
 		super(options)
-		this.icons = false
-		this.chromo = true
-		this.console = new NoConsole()
+		const {
+			console = new NoConsole(),
+		} = options
+		this.console = NoConsole.from(console)
 	}
 
 	/**

@@ -654,6 +654,7 @@ class Logger {
 	 * @returns {string} - Progress bar string
 	 */
 	static bar(i, len, width = 12, char = '█', space = '·') {
+		if (0 === len) len = Number.MAX_SAFE_INTEGER
 		const percent = ((i + 1) / len) * 100
 		const filled = Math.floor((percent / 100) * width)
 		const suffix = ` ${percent.toFixed(2)}%`

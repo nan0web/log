@@ -30,6 +30,18 @@ describe('NoConsole class functionality', () => {
 		assert.equal(noConsole.output().length, 0)
 	})
 
+	it('should resolve or create NoConsole with the Factory from()', () => {
+		const a = new NoConsole()
+		const b = NoConsole.from(a)
+		const c = NoConsole.from({})
+		assert.ok(a === b)
+		assert.ok(a == b)
+		assert.ok(c !== a)
+		assert.ok(c !== b)
+		assert.ok(c != a)
+		assert.ok(c != b)
+	})
+
 	it('should handle optional console methods without throwing', () => {
 		const noConsole = new NoConsole()
 		assert.doesNotThrow(() => noConsole.assert(true))
