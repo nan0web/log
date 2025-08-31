@@ -1,38 +1,3 @@
-export default Logger;
-export type LoggerOptions = {
-    /**
-     * - Minimum log level to output (debug|info|warn|error|silent)
-     */
-    level?: string | undefined;
-    /**
-     * - Console instance to use for output
-     */
-    console?: Console | undefined;
-    /**
-     * - Whether to show icons
-     */
-    icons?: boolean | undefined;
-    /**
-     * - Whether to use colors
-     */
-    chromo?: boolean | undefined;
-    /**
-     * - Time format for logs
-     */
-    time?: string | boolean | undefined;
-    /**
-     * - Whether to log spent time
-     */
-    spent?: boolean | undefined;
-    /**
-     * - Stream function for output
-     */
-    stream?: Function | undefined;
-    /**
-     * - Format map array for different levels with icons/colors config
-     */
-    formats?: any[] | undefined;
-};
 /**
  * @typedef {Object} LoggerOptions
  * @property {string} [level='info'] - Minimum log level to output (debug|info|warn|error|silent)
@@ -48,7 +13,7 @@ export type LoggerOptions = {
  * Logger class for handling different log levels
  * Supports debug, info, warn, error, and log methods
  */
-declare class Logger {
+export default class Logger {
     static LOGO: string;
     static DIM: string;
     static BLACK: string;
@@ -247,18 +212,15 @@ declare class Logger {
     }): string[];
     /**
      * Move cursor up in the terminal
-     * ```js
-     * const width = 999
-     * for (let i = 0; i < width; i++) {
-     *   logger.clearLine(logger.cursorUp())
-     *   logger.info(Logger.bar(i, width))
-     *   await sleep(33)
-     * }
-     * ```
-     * @param {number} lines - Number of lines to move up
+     * @param {number} [lines] - Number of lines to move up
+     * @param {boolean} [clearLines] - If true uses this.clearLine() for every line of lines.
      * @returns {string} - Cursor up sequence string
+     *
+     * @example
+     * logger.cursorUp(3, true) // clear lines and returns the string
+     * logger.cursorUp(3) // returns the string
      */
-    cursorUp(lines?: number): string;
+    cursorUp(lines?: number | undefined, clearLines?: boolean | undefined): string;
     /**
      * Move cursor down in the terminal
      * ```js
@@ -297,6 +259,22 @@ declare class Logger {
      */
     getWindowSize(): number[];
     /**
+     * Cuts a string to fit within a specified width, taking into account
+     * visible string width (including handling of ANSI codes, full-width characters, etc.).
+     *
+     * @param {string} str - The input string to cut
+     * @param {number} [width=this.getWindowSize()[0]] - Maximum width allowed for the string.
+     *   If not provided, defaults to the current terminal window width.
+     * @returns {string} The original string if it fits within the width,
+     *   otherwise the string truncated to fit the specified width.
+     *
+     * @example
+     * // Assuming terminal width is 80
+     * cut("Hello, world!") // returns "Hello, world!"
+     * cut("Hello".repeat(20), 13) // returns "HelloHelloHel" (truncated to fit 13 columns)
+     */
+    cut(str: string, width?: number | undefined): string;
+    /**
      * Erase the previous line by covering it with spaces or specified character
      * @param {string} char - Character to use for erasing (default: space)
      * @returns {string} - Erase sequence string
@@ -309,5 +287,39 @@ declare class Logger {
      */
     private _storeLine;
 }
+export type LoggerOptions = {
+    /**
+     * - Minimum log level to output (debug|info|warn|error|silent)
+     */
+    level?: string | undefined;
+    /**
+     * - Console instance to use for output
+     */
+    console?: Console | undefined;
+    /**
+     * - Whether to show icons
+     */
+    icons?: boolean | undefined;
+    /**
+     * - Whether to use colors
+     */
+    chromo?: boolean | undefined;
+    /**
+     * - Time format for logs
+     */
+    time?: string | boolean | undefined;
+    /**
+     * - Whether to log spent time
+     */
+    spent?: boolean | undefined;
+    /**
+     * - Stream function for output
+     */
+    stream?: Function | undefined;
+    /**
+     * - Format map array for different levels with icons/colors config
+     */
+    formats?: any[] | undefined;
+};
 import Console from "./Console.js";
 import LoggerFormat from "./LoggerFormat.js";

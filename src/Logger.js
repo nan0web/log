@@ -1,6 +1,7 @@
+import stringWidth from "string-width"
+import { empty } from "@nan0web/types"
 import LoggerFormat from "./LoggerFormat.js"
 import Console from "./Console.js"
-import { empty } from "@nan0web/types"
 
 /**
  * @typedef {Object} LoggerOptions
@@ -18,7 +19,7 @@ import { empty } from "@nan0web/types"
  * Logger class for handling different log levels
  * Supports debug, info, warn, error, and log methods
  */
-class Logger {
+export default class Logger {
 	static LOGO = [
 		"__   _ _______ __   _     _  _  _ _______ ______ ",
 		"| \\  | |_____| | \\  |     |  |  | |______ |_____] ",
@@ -171,7 +172,7 @@ class Logger {
 			if (format.color) prefix.unshift(format.color)
 		}
 		logArgs.push(...args)
-		return prefix.length ? prefix + logArgs.join(" ") + Logger.RESET : logArgs.join(" ")
+		return prefix.length ? prefix.join("") + logArgs.join(" ") + Logger.RESET : logArgs.join(" ")
 	}
 
 	/**
@@ -446,7 +447,7 @@ class Logger {
 		// Calculate column widths
 		for (let i = 0; i < cols; i++) {
 			const max = Math.max(
-				...(rows.map(row => padding + (row[i]?.length || 0))),
+				...(rows.map(row => padding + (stringWidth(row[i] || "") || 0))),
 				widths[i] || 0
 			)
 			widths[i] = max
@@ -458,21 +459,24 @@ class Logger {
 			const line = row.map((cell = '', i) => {
 				const width = widths[i]
 				const align = alignArr[i] || 'left'
-				const padLen = Math.max(0, width - cell.length)
+				const padLen = Math.max(0, width - stringWidth(cell))
 
+				let paddedCell = cell
 				if (align === 'right') {
 					if (i === row.length - 1) {
-						return space.repeat(padLen) + cell
+						paddedCell = space.repeat(padLen) + cell
+					} else {
+						paddedCell = space.repeat(Math.max(0, padLen - padding)) + cell + space.repeat(padding)
 					}
-					return space.repeat(Math.max(0, padLen - padding)) + cell + space.repeat(padding)
-				}
-				if (align === 'center') {
+				} else if (align === 'center') {
 					const left = Math.floor(padLen / 2)
 					const right = padLen - left
-					return space.repeat(left) + cell + space.repeat(right)
+					paddedCell = space.repeat(left) + cell + space.repeat(right)
+				} else {
+					// default to left alignment
+					paddedCell = cell + space.repeat(padLen)
 				}
-				// default to left
-				return cell + space.repeat(padLen)
+				return paddedCell
 			}).join('')
 			result.push(line)
 		}
@@ -482,7 +486,7 @@ class Logger {
 			const header = columns.map((col, i) => {
 				const width = widths[i]
 				const align = alignArr[i] || 'left'
-				const padLen = width - col.length
+				const padLen = width - stringWidth(col)
 
 				if (align === 'right') return space.repeat(padLen) + col
 				if (align === 'center') {
@@ -505,14 +509,12 @@ class Logger {
 		}
 
 		if (headBorder > 0 && !empty(columns)) {
-			// @todo add vertical |
 			const headerLength = result[0].length
 			const headBorderLine = "-".repeat(headerLength)
 			result.splice(1 + border, 0, headBorderLine)
 		}
 
 		if (footBorder > 0) {
-			// @todo add vertical |
 			const resultLength = result.length
 			const footBorderLine = "-".repeat(result[resultLength - 1].length)
 			result.splice(resultLength - 1, 0, footBorderLine)
@@ -532,19 +534,24 @@ class Logger {
 
 	/**
 	 * Move cursor up in the terminal
-	 * ```js
-	 * const width = 999
-	 * for (let i = 0; i < width; i++) {
-	 *   logger.clearLine(logger.cursorUp())
-	 *   logger.info(Logger.bar(i, width))
-	 *   await sleep(33)
-	 * }
-	 * ```
-	 * @param {number} lines - Number of lines to move up
+	 * @param {number} [lines] - Number of lines to move up
+	 * @param {boolean} [clearLines] - If true uses this.clearLine() for every line of lines.
 	 * @returns {string} - Cursor up sequence string
+	 *
+	 * @example
+	 * logger.cursorUp(3, true) // clear lines and returns the string
+	 * logger.cursorUp(3) // returns the string
 	 */
-	cursorUp(lines = 1) {
-		return `\x1b[${lines}A`
+	cursorUp(lines = 1, clearLines = false) {
+		const str = `\x1b[${lines}A`
+		if (!clearLines) return str
+		this.write(str)
+		for (let i = 0; i < Math.abs(lines); i++) {
+			this.clearLine()
+			// this.write("\n")
+		}
+		this.console.info(str)
+		return str
 	}
 
 	/**
@@ -614,6 +621,26 @@ class Logger {
 	}
 
 	/**
+	 * Cuts a string to fit within a specified width, taking into account
+	 * visible string width (including handling of ANSI codes, full-width characters, etc.).
+	 *
+	 * @param {string} str - The input string to cut
+	 * @param {number} [width=this.getWindowSize()[0]] - Maximum width allowed for the string.
+	 *   If not provided, defaults to the current terminal window width.
+	 * @returns {string} The original string if it fits within the width,
+	 *   otherwise the string truncated to fit the specified width.
+	 *
+	 * @example
+	 * // Assuming terminal width is 80
+	 * cut("Hello, world!") // returns "Hello, world!"
+	 * cut("Hello".repeat(20), 13) // returns "HelloHelloHel" (truncated to fit 13 columns)
+	 */
+	cut(str, width = this.getWindowSize()[0]) {
+		const length = stringWidth(str)
+		return length > width ? str.slice(0, width) : str
+	}
+
+	/**
 	 * Erase the previous line by covering it with spaces or specified character
 	 * @param {string} char - Character to use for erasing (default: space)
 	 * @returns {string} - Erase sequence string
@@ -662,5 +689,3 @@ class Logger {
 		return `${char.repeat(filled)}${space.repeat(Math.max(0, width - filled))}${suffix}`
 	}
 }
-
-export default Logger

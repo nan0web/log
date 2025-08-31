@@ -255,6 +255,21 @@ describe('Logger class functionality', () => {
 		assert.ok(result[0].length >= 15) // name width + age width + spaces
 	})
 
+	it("should handle table with UTF-8 values", () => {
+		const langs = [
+			["🇩🇪", "Deutsch", "de"],
+			["🇯🇵", "日本語", "ja"],
+			["🇨🇳", "中文", "zh"],
+		]
+		const logger = new Logger()
+		const result = logger.table(langs, null, { silent: true })
+		assert.deepEqual(result, [
+			"🇩🇪 Deutsch de ",
+			"🇯🇵 日本語  ja ",
+			"🇨🇳 中文    zh ",
+		])
+	})
+
 	// Additional tests to cover uncovered lines in Logger.js
 	it('should handle success logging', () => {
 		const logger = new Logger('debug')
@@ -286,5 +301,12 @@ describe('Logger class functionality', () => {
 		logger.formats.clear()
 		const result = logger._argsWith('info', 'test message')
 		assert.ok(result.includes('test message'))
+	})
+
+	it("should cut the text", () => {
+		const logger = new Logger()
+
+		assert.equal(logger.cut("Hello, world!"), "Hello, world!")
+		assert.equal(logger.cut("Hello".repeat(20), 13), "HelloHelloHel")
 	})
 })
