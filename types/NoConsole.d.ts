@@ -9,6 +9,8 @@ declare class NoConsole extends Console {
      * @returns {NoConsole}
      */
     static from(input: object): NoConsole;
+    constructor(options?: {});
+    silent: boolean;
     /**
      * Returns all stored logs.
      * @returns {Array<Array<*>>} An array of log entries, each containing the log level and arguments

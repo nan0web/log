@@ -20,6 +20,18 @@ describe('NoConsole class functionality', () => {
 		assert.deepEqual(logs[4], ['log', 'log message'])
 	})
 
+	it('should not store logs when silent mode is enabled', () => {
+		const console = new NoConsole({ silent: true })
+		console.debug('debug message')
+		console.info('info message')
+		console.warn('warn message')
+		console.error('error message')
+		console.log('log message')
+
+		const logs = console.output()
+		assert.equal(logs.length, 0)
+	})
+
 	it('should clear all stored logs', () => {
 		const noConsole = new NoConsole()
 		noConsole.debug('debug message')

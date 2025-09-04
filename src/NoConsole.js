@@ -8,6 +8,14 @@ class NoConsole extends Console {
 	/** @type {Array<Array<string, *[]>>} */
 	#logs = []
 
+	constructor(options = {}) {
+		super(options)
+		const {
+			silent = false
+		} = options
+		this.silent = Boolean(silent)
+	}
+
 	/**
 	 * Clears all stored logs.
 	 * @returns {void}
@@ -22,6 +30,7 @@ class NoConsole extends Console {
 	 * @returns {void}
 	 */
 	debug(...args) {
+		if (this.silent) return
 		this.#logs.push(["debug", ...args])
 	}
 
@@ -31,6 +40,7 @@ class NoConsole extends Console {
 	 * @returns {void}
 	 */
 	info(...args) {
+		if (this.silent) return
 		this.#logs.push(["info", ...args])
 	}
 
@@ -40,6 +50,7 @@ class NoConsole extends Console {
 	 * @returns {void}
 	 */
 	warn(...args) {
+		if (this.silent) return
 		this.#logs.push(["warn", ...args])
 	}
 
@@ -49,6 +60,7 @@ class NoConsole extends Console {
 	 * @returns {void}
 	 */
 	error(...args) {
+		if (this.silent) return
 		this.#logs.push(["error", ...args])
 	}
 
@@ -58,6 +70,7 @@ class NoConsole extends Console {
 	 * @returns {void}
 	 */
 	log(...args) {
+		if (this.silent) return
 		this.#logs.push(["log", ...args])
 	}
 

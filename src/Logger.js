@@ -450,53 +450,41 @@ export default class Logger {
 				...(rows.map(row => padding + (stringWidth(row[i] || "") || 0))),
 				widths[i] || 0
 			)
-			widths[i] = max
+			widths[i] = Math.max(max, String(columns?.[i] || "").length)
+		}
+
+		const textPadding = (cell, i, len) => {
+			const width = widths[i]
+			const align = alignArr[i] || 'left'
+			const padLen = Math.max(0, width - stringWidth(cell))
+			let paddedCell = cell
+			if (align === 'right') {
+				if (i === len - 1) {
+					paddedCell = space.repeat(padLen) + cell
+				} else {
+					paddedCell = space.repeat(Math.max(0, padLen - padding)) + cell + space.repeat(padding)
+				}
+			} else if (align === 'center') {
+				const left = Math.floor(padLen / 2)
+				const right = padLen - left
+				paddedCell = space.repeat(left) + cell + space.repeat(right)
+			} else {
+				// default to left alignment
+				paddedCell = cell + space.repeat(padLen)
+			}
+			return paddedCell
 		}
 
 		const result = []
 		// Format and print each row
 		for (const row of rows) {
-			const line = row.map((cell = '', i) => {
-				const width = widths[i]
-				const align = alignArr[i] || 'left'
-				const padLen = Math.max(0, width - stringWidth(cell))
-
-				let paddedCell = cell
-				if (align === 'right') {
-					if (i === row.length - 1) {
-						paddedCell = space.repeat(padLen) + cell
-					} else {
-						paddedCell = space.repeat(Math.max(0, padLen - padding)) + cell + space.repeat(padding)
-					}
-				} else if (align === 'center') {
-					const left = Math.floor(padLen / 2)
-					const right = padLen - left
-					paddedCell = space.repeat(left) + cell + space.repeat(right)
-				} else {
-					// default to left alignment
-					paddedCell = cell + space.repeat(padLen)
-				}
-				return paddedCell
-			}).join('')
+			const line = row.map((cell = '', i) => textPadding(cell, i, row.length)).join('')
 			result.push(line)
 		}
 
 		// Add header if columns are specified
 		if (!empty(columns)) {
-			const header = columns.map((col, i) => {
-				const width = widths[i]
-				const align = alignArr[i] || 'left'
-				const padLen = width - stringWidth(col)
-
-				if (align === 'right') return space.repeat(padLen) + col
-				if (align === 'center') {
-					const left = Math.floor(padLen / 2)
-					const right = padLen - left
-					return space.repeat(left) + col + space.repeat(right)
-				}
-				// default to left
-				return col + space.repeat(padLen)
-			}).join('')
+			const header = columns.map((col, i) => textPadding(col, i, columns.length)).join('')
 			result.unshift(header)
 		}
 

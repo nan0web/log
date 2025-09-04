@@ -270,6 +270,20 @@ describe('Logger class functionality', () => {
 		])
 	})
 
+	it.todo("should handle table with wide columns and padding", () => {
+		const table = [
+			[1, 2, 3],
+			["-", "+++", "-"]
+		]
+		const logger = new Logger()
+		const result = logger.table(table, ["First", "2nd", "3rd"], { padding: 3 })
+		assert.deepEqual(result, [
+			"First   2nd     3rd",
+			"1       2       3",
+			"-       +++     -",
+		])
+	})
+
 	// Additional tests to cover uncovered lines in Logger.js
 	it('should handle success logging', () => {
 		const logger = new Logger('debug')
