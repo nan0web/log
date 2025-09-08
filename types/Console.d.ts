@@ -7,12 +7,22 @@ declare class LogConsole {
     /**
      * Creates a new Console instance.
      * @param {Object} [options={}] - Console configuration options
+     * @param {any} [options.prefix] - The prefix data for every log
      * @param {Console} [options.console=console] - The underlying console instance to wrap
      */
     constructor(options?: {
+        prefix?: any;
         console?: Console | undefined;
     } | undefined);
+    /** @type {any} */
+    prefix: any;
     console: Console;
+    /**
+     * Applies the prefix to arguments if defined
+     * @param {any[]} args - Arguments list
+     * @returns {any[]}
+     */
+    _applyPrefix(args: any[]): any[];
     /**
      * Logs a debug message
      * @param {...any} args - Arguments to log

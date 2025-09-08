@@ -3,6 +3,7 @@ import NoConsole from "./NoConsole.js"
 
 class NoLogger extends Logger {
 	/** @type {NoConsole} */
+	// @ts-ignore NoConsole does not extend LogConsole to be lighter
 	console
 
 	/**
@@ -10,7 +11,7 @@ class NoLogger extends Logger {
 	 * @param {import("./Logger.js").LoggerOptions} [options={}] - The options for the logger
 	 */
 	constructor(options = {}) {
-		super(options)
+		super({ ... options })
 		const {
 			console = new NoConsole(),
 		} = options
@@ -19,7 +20,7 @@ class NoLogger extends Logger {
 
 	/**
 	 * Returns the logged output.
-	 * @returns {Array<Array<*>>} The array of logged messages
+	 * @returns {Array<Array<any>>} The array of logged messages
 	 */
 	output() {
 		return this.console.output()

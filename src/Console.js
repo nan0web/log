@@ -3,16 +3,20 @@
  * Provides a consistent interface for logging across environments and supports streaming to files.
  */
 class LogConsole {
+	/** @type {any} */
+	prefix
 	/**
 	 * Creates a new Console instance.
 	 * @param {Object} [options={}] - Console configuration options
+	 * @param {any} [options.prefix] - The prefix data for every log
 	 * @param {Console} [options.console=console] - The underlying console instance to wrap
 	 */
 	constructor(options = {}) {
-		const { console: consoleInstance = console } = options
+		const { console: consoleInstance = console, prefix = "" } = options
 
 		// Use the provided console or fallback to global console
 		this.console = consoleInstance
+		this.prefix = prefix
 
 		// In browser environment, ensure common methods exist
 		if (typeof window !== 'undefined') {
@@ -24,11 +28,23 @@ class LogConsole {
 	}
 
 	/**
+	 * Applies the prefix to arguments if defined
+	 * @param {any[]} args - Arguments list
+	 * @returns {any[]}
+	 */
+	_applyPrefix(args) {
+		if (this.prefix) {
+			return [this.prefix, ...args]
+		}
+		return args
+	}
+
+	/**
 	 * Logs a debug message
 	 * @param {...any} args - Arguments to log
 	 */
 	debug(...args) {
-		this.console.debug(...args)
+		this.console.debug(...this._applyPrefix(args))
 	}
 
 	/**
@@ -36,7 +52,7 @@ class LogConsole {
 	 * @param {...any} args - Arguments to log
 	 */
 	info(...args) {
-		this.console.info(...args)
+		this.console.info(...this._applyPrefix(args))
 	}
 
 	/**
@@ -44,7 +60,7 @@ class LogConsole {
 	 * @param {...any} args - Arguments to log
 	 */
 	warn(...args) {
-		this.console.warn(...args)
+		this.console.warn(...this._applyPrefix(args))
 	}
 
 	/**
@@ -52,7 +68,7 @@ class LogConsole {
 	 * @param {...any} args - Arguments to log
 	 */
 	error(...args) {
-		this.console.error(...args)
+		this.console.error(...this._applyPrefix(args))
 	}
 
 	/**
@@ -60,7 +76,7 @@ class LogConsole {
 	 * @param {...any} args - Arguments to log
 	 */
 	log(...args) {
-		this.console.log(...args)
+		this.console.log(...this._applyPrefix(args))
 	}
 
 	/**
@@ -79,7 +95,7 @@ class LogConsole {
 	 */
 	assert(condition, ...args) {
 		if (this.console.assert) {
-			this.console.assert(condition, ...args)
+			this.console.assert(condition, ...this._applyPrefix(args))
 		}
 	}
 
@@ -129,7 +145,7 @@ class LogConsole {
 	 */
 	group(...args) {
 		if (this.console.group) {
-			this.console.group(...args)
+			this.console.group(...this._applyPrefix(args))
 		}
 	}
 
@@ -139,7 +155,7 @@ class LogConsole {
 	 */
 	groupCollapsed(...args) {
 		if (this.console.groupCollapsed) {
-			this.console.groupCollapsed(...args)
+			this.console.groupCollapsed(...this._applyPrefix(args))
 		}
 	}
 

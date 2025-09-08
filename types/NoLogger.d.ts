@@ -9,7 +9,7 @@ declare class NoLogger extends Logger {
     console: NoConsole;
     /**
      * Returns the logged output.
-     * @returns {Array<Array<*>>} The array of logged messages
+     * @returns {Array<Array<any>>} The array of logged messages
      */
     output(): Array<Array<any>>;
 }
