@@ -221,7 +221,7 @@ describe('Logger class functionality', () => {
 		const loggedLines = []
 		logger.console.info = (...args) => loggedLines.push(args[0])
 
-		const result = logger.table(data, null, { silent: true })
+		const result = logger.table(data, [], { silent: true })
 		assert.equal(result.length, 2)
 		assert.ok(result[0].includes('John'))
 		assert.ok(result[1].includes('Jane'))
@@ -262,11 +262,38 @@ describe('Logger class functionality', () => {
 			["🇨🇳", "中文", "zh"],
 		]
 		const logger = new Logger()
-		const result = logger.table(langs, null, { silent: true })
+		const result = logger.table(langs, [], { silent: true })
 		assert.deepEqual(result, [
 			"🇩🇪 Deutsch de ",
 			"🇯🇵 日本語  ja ",
 			"🇨🇳 中文    zh ",
+		])
+	})
+
+	it("should handle proper widths of the columns", () => {
+		const rows = [
+			[ "gpt-oss-120b", 0, 0, "65,536", "65,536", "2024-06-01"],
+			[ "qwen-3-32b", 0, 0, "65,536", "8,192", "2024-06-01"],
+			[ "qwen-3-235b-a22b-instruct-2507", 0, 0, "65,536", "8,192", "2024-06-01"],
+			[ "qwen-3-235b-a22b-thinking-2507", 0, 0, "65,536", "8,192", "2024-06-01"],
+			[ "qwen-3-coder-480b", 0, 0, "65,536", "8,192", "2024-06-01"]
+		]
+		const cols = ["Model name", "→ in 1MT", "← out 1MT", "Context T", "Output T", "Date"]
+		const logger = new Logger()
+		const footer = ["footer", "0", "0", "", "", 2024]
+		const result = logger.table(
+			[...rows, footer],
+			cols,
+			{ padding: 3, aligns: ['left', 'right', 'right', 'right', 'right', 'right'] }
+		)
+		assert.deepEqual(result, [
+			"Model name                       → in 1MT   ← out 1MT   Context T   Output T         Date",
+			"gpt-oss-120b                            0           0      65,536     65,536   2024-06-01",
+			"qwen-3-32b                              0           0      65,536      8,192   2024-06-01",
+			"qwen-3-235b-a22b-instruct-2507          0           0      65,536      8,192   2024-06-01",
+			"qwen-3-235b-a22b-thinking-2507          0           0      65,536      8,192   2024-06-01",
+			"qwen-3-coder-480b                       0           0      65,536      8,192   2024-06-01",
+			"footer                                  0           0                                2024",
 		])
 	})
 

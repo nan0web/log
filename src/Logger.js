@@ -444,23 +444,29 @@ export default class Logger {
 			? aligns
 			: Array(cols).fill(aligns)
 
+		const full = [columns, ...rows]
 		// Calculate column widths
 		for (let i = 0; i < cols; i++) {
 			const max = Math.max(
-				...(rows.map(row => padding + (stringWidth(row[i] || "") || 0))),
+				...(full.map(row => padding + (stringWidth(row[i] || "") || 0))),
 				widths[i] || 0
 			)
 			widths[i] = Math.max(max, String(columns?.[i] || "").length)
 		}
 
-		const textPadding = (cell, i, len) => {
+		const textPadding = (cell, i, cols = []) => {
+			const len = cols.length
 			const width = widths[i]
 			const align = alignArr[i] || 'left'
 			const padLen = Math.max(0, width - stringWidth(cell))
 			let paddedCell = cell
 			if (align === 'right') {
 				if (i === len - 1) {
-					paddedCell = space.repeat(padLen) + cell
+					if (aligns[i - 1] === "right") {
+						paddedCell = space.repeat(padLen - padding) + cell
+					} else {
+						paddedCell = space.repeat(padLen) + cell
+					}
 				} else {
 					paddedCell = space.repeat(Math.max(0, padLen - padding)) + cell + space.repeat(padding)
 				}
@@ -478,13 +484,13 @@ export default class Logger {
 		const result = []
 		// Format and print each row
 		for (const row of rows) {
-			const line = row.map((cell = '', i) => textPadding(cell, i, row.length)).join('')
+			const line = row.map((cell = '', i) => textPadding(cell, i, row)).join('')
 			result.push(line)
 		}
 
 		// Add header if columns are specified
 		if (!empty(columns)) {
-			const header = columns.map((col, i) => textPadding(col, i, columns.length)).join('')
+			const header = columns.map((col, i) => textPadding(col, i, columns)).join('')
 			result.unshift(header)
 		}
 
