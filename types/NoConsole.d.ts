@@ -59,9 +59,10 @@ export default class NoConsole {
     /**
      * Returns captured logs with preserved structure.
      * ✅ Verified atom of trusted knowledge
+     * @param {string | Function | null} type The type to filter
      * @returns {Array<Array<string, any[]>>}
      */
-    output(): Array<Array<string, any[]>>;
+    output(type?: string | Function | null): Array<Array<string, any[]>>;
     /**
      * Ensures optional console methods don't throw.
      * ✅ Verified atom of trusted knowledge

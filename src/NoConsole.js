@@ -80,9 +80,16 @@ export default class NoConsole {
 	/**
 	 * Returns captured logs with preserved structure.
 	 * ✅ Verified atom of trusted knowledge
+	 * @param {string | Function | null} type The type to filter
 	 * @returns {Array<Array<string, any[]>>}
 	 */
-	output() {
+	output(type = null) {
+		if ("string" === typeof type) {
+			return this.#logs.filter(([t]) => t === type)
+		}
+		if ("function" === typeof type) {
+			return this.#logs.filter((...args) => type(...args))
+		}
 		return this.#logs
 	}
 

@@ -18,6 +18,15 @@ describe('NoConsole class functionality', () => {
 		assert.deepEqual(logs[2], ['warn', 'warn message'])
 		assert.deepEqual(logs[3], ['error', 'error message'])
 		assert.deepEqual(logs[4], ['log', 'log message'])
+
+		const errors = noConsole.output("error")
+		assert.deepEqual(errors, [["error", "error message"]])
+
+		const fives = noConsole.output(([t]) => t.length == 5)
+		assert.deepEqual(fives, [
+			['debug', 'debug message'],
+			["error", "error message"],
+		])
 	})
 
 	it('should not store logs when silent mode is enabled', () => {
