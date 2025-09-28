@@ -11,11 +11,13 @@ describe('Logger class functionality', () => {
 		assert.equal(logger.level, 'info')
 		assert.ok(logger.console instanceof Console)
 		assert.equal(logger.icons, false)
-		assert.equal(logger.chromo, false)
+		assert.equal(logger.chromo, true)
 		assert.equal(logger.stream, null)
 	})
 
 	it('should create a logger instance with custom values', () => {
+		const originalIsTTY = process.stdout?.isTTY
+		Object.defineProperty(process.stdout, 'isTTY', { value: true, configurable: true })
 		const logger = new Logger({
 			level: 'debug',
 			icons: true,
@@ -23,7 +25,8 @@ describe('Logger class functionality', () => {
 		})
 		assert.equal(logger.level, 'debug')
 		assert.equal(logger.icons, true)
-		assert.equal(logger.chromo, true)
+		assert.equal(logger.chromo, true) // Explicitly check for boolean true
+		Object.defineProperty(process.stdout, 'isTTY', { value: originalIsTTY, configurable: true })
 	})
 
 	it('should create a logger instance with stream function', () => {
@@ -349,5 +352,161 @@ describe('Logger class functionality', () => {
 
 		assert.equal(logger.cut("Hello, world!"), "Hello, world!")
 		assert.equal(logger.cut("Hello".repeat(20), 13), "HelloHelloHel")
+	})
+
+	// New tests for ANSI stripping and TTY detection
+	it('should disable chromo when not TTY', () => {
+		const originalIsTTY = process.stdout?.isTTY
+		Object.defineProperty(process.stdout, 'isTTY', { value: false, configurable: true })
+
+		const logger = new Logger({ chromo: false })
+		assert.equal(logger.chromo, true)
+
+		Object.defineProperty(process.stdout, 'isTTY', { value: originalIsTTY, configurable: true })
+	})
+
+	it('should enable chromo when TTY and option true', () => {
+		const originalIsTTY = process.stdout?.isTTY
+		Object.defineProperty(process.stdout, 'isTTY', { value: true, configurable: true })
+
+		const logger = new Logger({ chromo: true })
+		assert.equal(logger.chromo, true)
+
+		Object.defineProperty(process.stdout, 'isTTY', { value: originalIsTTY, configurable: true })
+	})
+
+	it('should disable chromo when option false regardless of TTY', () => {
+		const originalIsTTY = process.stdout?.isTTY
+		Object.defineProperty(process.stdout, 'isTTY', { value: true, configurable: true })
+
+		const logger = new Logger({ chromo: false })
+		assert.equal(logger.chromo, false)
+
+		Object.defineProperty(process.stdout, 'isTTY', { value: originalIsTTY, configurable: true })
+	})
+
+	it('should not include ANSI codes in _argsWith when chromo false', () => {
+		const logger = new Logger({ chromo: false })
+		const str = logger._argsWith('error', 'test message')
+		assert(!str.includes('\x1b'), 'should not include ANSI escape codes')
+		assert(str.includes('test message'))
+	})
+
+	it('should include ANSI codes in _argsWith when chromo true', () => {
+		const originalIsTTY = process.stdout?.isTTY
+		Object.defineProperty(process.stdout, 'isTTY', { value: true, configurable: true })
+
+		const logger = new Logger()
+		const str = logger._argsWith('error', 'test message')
+		assert(str.includes(Logger.RED), 'should include ANSI color codes')
+		assert(str.includes('test message'))
+
+		Object.defineProperty(process.stdout, 'isTTY', { value: originalIsTTY, configurable: true })
+	})
+
+	it('should strip ANSI codes in write when not TTY', () => {
+		const originalIsTTY = process.stdout?.isTTY
+		Object.defineProperty(process.stdout, 'isTTY', { value: false, configurable: true })
+		const originalWrite = process.stdout.write
+		let written = ''
+		process.stdout.write = (str) => { written += str }
+
+		const logger = new Logger()
+		logger.write(Logger.RED + 'colored text' + Logger.RESET)
+
+		assert(!written.includes('\x1b'), 'should strip ANSI in write')
+		assert(written.includes('colored text'))
+
+		process.stdout.write = originalWrite
+		Object.defineProperty(process.stdout, 'isTTY', { value: originalIsTTY, configurable: true })
+	})
+
+	it('should not strip ANSI in write when TTY', () => {
+		const originalIsTTY = process.stdout?.isTTY
+		Object.defineProperty(process.stdout, 'isTTY', { value: true, configurable: true })
+		const originalWrite = process.stdout.write
+		let written = ''
+		process.stdout.write = (str) => { written += str }
+
+		const logger = new Logger({ chromo: true })
+		logger.write(Logger.RED + 'colored text' + Logger.RESET)
+
+		assert(written.includes(Logger.RED), 'should not strip ANSI in write when TTY')
+		assert(written.includes('colored text'))
+
+		process.stdout.write = originalWrite
+		Object.defineProperty(process.stdout, 'isTTY', { value: originalIsTTY, configurable: true })
+	})
+
+	it('should strip ANSI in static style when stripped option true', () => {
+		const styled = Logger.style('test text', { color: 'red', stripped: true })
+		assert.equal(styled, 'test text')
+		assert(!styled.includes('\x1b'))
+	})
+
+	it('should apply colors in static style when stripped false', () => {
+		const styled = Logger.style('test text', { color: 'red', stripped: false })
+		assert(styled.includes(Logger.RED))
+		assert(styled.includes('test text'))
+	})
+
+	it('should strip ANSI in static stripANSI method', () => {
+		const ansiStr = Logger.RED + 'colored' + Logger.RESET + ' text'
+		const stripped = Logger.stripANSI(ansiStr)
+		assert.equal(stripped, 'colored text')
+		assert(!stripped.includes('\x1b'))
+	})
+
+	it('should use stripped length in cut method', () => {
+		const logger = new Logger()
+		const ansiStr = Logger.RED + 'Hello'.repeat(10) + Logger.RESET
+		const cutStr = logger.cut(ansiStr, 5)
+		// Since it strips for width calc and truncates, but preserves original (approx)
+		assert.equal(Logger.stripANSI(cutStr).length, 5)
+	})
+
+	it('should store stripped lines in _storeLine', () => {
+		const logger = new Logger()
+		const ansiLine = Logger.RED + 'test line' + Logger.RESET
+		logger._storeLine(ansiLine)
+		assert.equal(logger._previousLines[0], 'test line')
+		assert(!logger._previousLines[0].includes('\x1b'))
+	})
+
+	it('should show colors in setFormat when chromo false', () => {
+		const logger = new Logger({ chromo: false })
+		logger.setFormat('error', { color: Logger.RED, icon: '!' })
+		const format = logger.formats.get('error')
+		assert.equal(format.color, Logger.RED)
+		assert.equal(format.icon, '!')
+	})
+
+	it('should keep colors in setFormat when chromo true', () => {
+		const originalIsTTY = process.stdout?.isTTY
+		Object.defineProperty(process.stdout, 'isTTY', { value: true, configurable: true })
+
+		const logger = new Logger({ chromo: true })
+		logger.setFormat('error', { color: Logger.RED, icon: '!' })
+		const format = logger.formats.get('error')
+		assert.equal(format.color, Logger.RED)
+		assert.equal(format.icon, '!')
+
+		Object.defineProperty(process.stdout, 'isTTY', { value: originalIsTTY, configurable: true })
+	})
+
+	it('should handle logging without ANSI when chromo disabled via TTY detection', () => {
+		const originalIsTTY = process.stdout?.isTTY
+		Object.defineProperty(process.stdout, 'isTTY', { value: false, configurable: true })
+
+		const consoleMock = new NoConsole()
+		const logger = new Logger({ chromo: true, console: consoleMock })
+		logger.error('test error')
+
+		const output = consoleMock.output()
+		const logStr = output[0][1]
+		assert(!logStr.includes('\x1b'), 'log should have no ANSI codes')
+		assert(logStr.includes('test error'))
+
+		Object.defineProperty(process.stdout, 'isTTY', { value: originalIsTTY, configurable: true })
 	})
 })

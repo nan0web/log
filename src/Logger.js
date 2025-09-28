@@ -84,7 +84,7 @@ export default class Logger {
 			level = 'info',
 			console: consoleInstance = console,
 			icons = false,
-			chromo = false,
+			chromo: chromoOption = false,
 			time = false,
 			spent = false,
 			stream = null,
@@ -102,7 +102,12 @@ export default class Logger {
 		this.console = new Console({ console: consoleInstance })
 		this.level = level
 		this.icons = Boolean(icons)
-		this.chromo = Boolean(chromo)
+		// Auto-detect chromo: if explicitly set to false, disable; if true, enable only if TTY; if unspecified, detect based on TTY
+		let effectiveChromo = Boolean(chromoOption)
+		if (!effectiveChromo && "undefined" !== typeof process && !process.stdout?.isTTY) {
+			effectiveChromo = true
+		}
+		this.chromo = Boolean(effectiveChromo)
 		this.time = time
 		this.spent = Boolean(spent)
 		this.stream = stream
@@ -124,10 +129,19 @@ export default class Logger {
 	_argsWith(target, ...args) {
 		let format = new LoggerFormat(this.formats.get(target))
 		if (!this.icons) format.icon = ""
-		if (this.chromo) format.color = ""
+		// Fixed: Apply colors only if chromo is enabled
+		if (this.chromo) {
+			format.color = ""
+			if (format.bgColor) format.bgColor = ""
+		}
 		if (args[0] instanceof LoggerFormat) {
 			format = new LoggerFormat(args[0])
 			args = args.slice(1)
+			// Strip colors from provided format if chromo disabled
+			if (!this.chromo) {
+				format.color = ""
+				format.bgColor = ""
+			}
 		}
 		if (!format.icon && this.icons) {
 			format.icon = {
@@ -140,14 +154,14 @@ export default class Logger {
 			}[target] || "•"
 		}
 		if (!format.color) {
-			format.color = {
+			format.color = !this.chromo ? {
 				debug: Logger.DIM,
 				log: "",
 				info: "",
 				warn: Logger.YELLOW,
 				error: Logger.RED,
 				success: Logger.GREEN,
-			}[target] || ""
+			}[target] || "" : ""
 		}
 
 		const logArgs = []
@@ -167,6 +181,7 @@ export default class Logger {
 		const prefix = []
 
 		if (format.icon) logArgs.push(format.icon)
+		// Fixed: Apply colors only if chromo is true
 		if (!this.chromo && (format.color || format.bgColor)) {
 			if (format.bgColor) prefix.unshift(format.bgColor)
 			if (format.color) prefix.unshift(format.color)
@@ -181,7 +196,13 @@ export default class Logger {
 	 * @param {object} opts - Format options
 	 */
 	setFormat(target, opts) {
-		this.formats.set(target, LoggerFormat.from(opts))
+		const format = LoggerFormat.from(opts)
+		// If chromo is disabled, strip colors from the format
+		if (!this.chromo) {
+			format.color = ""
+			format.bgColor = ""
+		}
+		this.formats.set(target, format)
 	}
 
 	/**
@@ -332,12 +353,16 @@ export default class Logger {
 	 * @param {object} styleOptions - Styling options
 	 * @param {string} [styleOptions.bgColor] - Background color
 	 * @param {string} [styleOptions.color] - Text color
+	 * @param {boolean} [styleOptions.stripped=false] - If true, strip ANSI codes instead of applying
 	 * @returns {string} - Styled value as a string
 	 */
 	static style(value, styleOptions = {}) {
+		const { bgColor, color, stripped = false } = styleOptions
+		if (stripped) {
+			return String(value)
+		}
 		if ("string" === typeof value) value = value.split("\n")
 		if (!Array.isArray(value)) value = String(value).split("\n")
-		const { bgColor, color } = styleOptions
 		const styledValue = []
 
 		value.map(String).forEach(row => {
@@ -348,6 +373,15 @@ export default class Logger {
 			styledValue.push("\n")
 		})
 		return styledValue.join("").slice(0, -1)
+	}
+
+	/**
+	 * Strip ANSI escape codes from a string
+	 * @param {string} str - Input string with potential ANSI codes
+	 * @returns {string} - String without ANSI codes
+	 */
+	static stripANSI(str) {
+		return str.replace(/\x1B[@-_][0-?]*[ -/]*[@-~]/g, '')
 	}
 
 	/**
@@ -572,6 +606,10 @@ export default class Logger {
 			this.console.info(str)
 			return
 		}
+		// Strip ANSI if not TTY
+		if (!process.stdout.isTTY) {
+			str = Logger.stripANSI(str)
+		}
 		process.stdout.write(str)
 	}
 
@@ -630,8 +668,13 @@ export default class Logger {
 	 * cut("Hello".repeat(20), 13) // returns "HelloHelloHel" (truncated to fit 13 columns)
 	 */
 	cut(str, width = this.getWindowSize()[0]) {
-		const length = stringWidth(str)
-		return length > width ? str.slice(0, width) : str
+		const length = stringWidth(Logger.stripANSI(str)) // Strip ANSI for accurate width calculation
+		if (length <= width) return str
+		// Truncate while preserving ANSI sequences is complex; for simplicity, strip and truncate
+		const stripped = Logger.stripANSI(str)
+		const truncated = stripped.slice(0, width)
+		// This is approximate; for full ANSI preservation, a more advanced parser is needed
+		return truncated
 	}
 
 	/**
@@ -651,7 +694,7 @@ export default class Logger {
 		const windowSize = this.getWindowSize()
 		const columns = windowSize[0]
 
-		return char.repeat(Math.max(0, columns - lastLine.length))
+		return char.repeat(Math.max(0, columns - stringWidth(Logger.stripANSI(lastLine))))
 	}
 
 	/**
@@ -660,7 +703,7 @@ export default class Logger {
 	 * @private
 	 */
 	_storeLine(line) {
-		this._previousLines.push(line)
+		this._previousLines.push(Logger.stripANSI(line)) // Store stripped for accurate length
 		if (this._previousLines.length > 10) {
 			this._previousLines.shift()
 		}

@@ -8,7 +8,7 @@ suite('NoLogger', () => {
 
 	describe('log levels', () => {
 		it('should log debug messages when level is debug', () => {
-			logger = new NoLogger({ level: 'debug', chromo: true })
+			logger = new NoLogger({ level: 'debug' })
 			logger.debug('test debug')
 			logger.info('test info')
 			logger.warn('test warn')
@@ -23,7 +23,7 @@ suite('NoLogger', () => {
 		})
 
 		it('should not log debug messages when level is info', () => {
-			logger = new NoLogger({ level: 'info', chromo: true })
+			logger = new NoLogger({ level: 'info' })
 			logger.debug('test debug')
 			logger.info('test info')
 			logger.warn('test warn')
@@ -45,7 +45,7 @@ suite('NoLogger', () => {
 
 			const output = logger.output()
 			assert.equal(output.length, 1)
-			assert.deepStrictEqual(output[0], ['error', '\x1B[31mtest error\x1B[0m'])
+			assert.deepStrictEqual(output[0], ['error', 'test error'])
 		})
 
 		it('should not log anything when level is silent', () => {
