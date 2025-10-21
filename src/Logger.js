@@ -104,7 +104,7 @@ export default class Logger {
 		this.icons = Boolean(icons)
 		// Auto-detect chromo: if explicitly set to false, disable; if true, enable only if TTY; if unspecified, detect based on TTY
 		let effectiveChromo = Boolean(chromoOption)
-		if (!effectiveChromo && "undefined" !== typeof process && !process.stdout?.isTTY) {
+		if (!effectiveChromo && !this.isTTY) {
 			effectiveChromo = true
 		}
 		this.chromo = Boolean(effectiveChromo)
@@ -118,6 +118,11 @@ export default class Logger {
 			(opts, target) => this.formats.set(target, LoggerFormat.from(opts))
 		)
 		this.currentLevel = Logger.LEVELS[this.level] ?? 1
+	}
+
+	/** @returns {boolean} */
+	get isTTY() {
+		return !("undefined" !== typeof process && !process.stdout?.isTTY)
 	}
 
 	/**
@@ -552,7 +557,7 @@ export default class Logger {
 			for (let row of result) {
 				if (prefix) row = prefix + row
 				const formatted = this._argsWith("info", row)
-				this.console.info(formatted)
+				this.info(formatted)
 				this._storeLine(formatted)
 				this.broadcast(formatted)
 			}

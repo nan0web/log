@@ -1,5 +1,4 @@
-export default NoLogger;
-declare class NoLogger extends Logger {
+export default class NoLogger extends Logger {
     /**
      * Creates a new NoLogger instance.
      * @param {import("./Logger.js").LoggerOptions} [options={}] - The options for the logger

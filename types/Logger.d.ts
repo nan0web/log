@@ -67,12 +67,20 @@ export default class Logger {
      * @param {object} styleOptions - Styling options
      * @param {string} [styleOptions.bgColor] - Background color
      * @param {string} [styleOptions.color] - Text color
+     * @param {boolean} [styleOptions.stripped=false] - If true, strip ANSI codes instead of applying
      * @returns {string} - Styled value as a string
      */
     static style(value: any, styleOptions?: {
         bgColor?: string | undefined;
         color?: string | undefined;
+        stripped?: boolean | undefined;
     }): string;
+    /**
+     * Strip ANSI escape codes from a string
+     * @param {string} str - Input string with potential ANSI codes
+     * @returns {string} - String without ANSI codes
+     */
+    static stripANSI(str: string): string;
     /**
      * Calculate progress percentage
      * @param {number} i - Current progress value
@@ -130,6 +138,8 @@ export default class Logger {
     /** @type {string[]} */
     _previousLines: string[];
     currentLevel: any;
+    /** @returns {boolean} */
+    get isTTY(): boolean;
     /**
      * Prepare arguments with formatting for specified log level
      * @param {string} target - Log level target

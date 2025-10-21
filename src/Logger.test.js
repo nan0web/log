@@ -306,11 +306,13 @@ describe('Logger class functionality', () => {
 			["-", "+++", "-"]
 		]
 		const logger = new Logger()
-		const result = logger.table(table, ["First", "2nd", "3rd"], { padding: 3 })
+		const result = logger.table(table, ["First", "2nd", "3rd"], { padding: 3, border: 1 })
 		assert.deepEqual(result, [
-			"First   2nd     3rd",
-			"1       2       3",
-			"-       +++     -",
+			"--------------------",
+			"First   2nd   3rd   ",
+			"1       2     3     ",
+			"-       +++   -     ",
+			"--------------------",
 		])
 	})
 

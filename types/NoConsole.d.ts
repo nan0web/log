@@ -5,7 +5,6 @@
 export default class NoConsole {
     /**
      * Factory method for consistent instance creation.
-     * ✅ Verified atom of trusted knowledge
      * @param {Object} input - Configuration or existing instance
      * @returns {NoConsole}
      */
@@ -28,44 +27,42 @@ export default class NoConsole {
     clear(): void;
     /**
      * Captures debug log without outputting.
-     * ✅ Verified atom of trusted knowledge
      * @param {...*} args - Arguments to capture
      */
     debug(...args: any[]): void;
     /**
      * Captures info log without outputting.
-     * ✅ Verified atom of trusted knowledge
      * @param {...*} args - Arguments to capture
      */
     info(...args: any[]): void;
     /**
      * Captures warning log without outputting.
-     * ✅ Verified atom of trusted knowledge
      * @param {...*} args - Arguments to capture
      */
     warn(...args: any[]): void;
     /**
      * Captures error log without outputting.
-     * ✅ Verified atom of trusted knowledge
      * @param {...*} args - Arguments to capture
      */
     error(...args: any[]): void;
     /**
      * Captures generic log without outputting.
-     * ✅ Verified atom of trusted knowledge
      * @param {...*} args - Arguments to capture
      */
     log(...args: any[]): void;
     /**
+     * Captures generic write without outputting.
+     * @param {...*} args - Arguments to capture
+     */
+    write(...args: any[]): void;
+    /**
      * Returns captured logs with preserved structure.
-     * ✅ Verified atom of trusted knowledge
      * @param {string | Function | null} type The type to filter
      * @returns {Array<Array<string, any[]>>}
      */
     output(type?: string | Function | null): Array<Array<string, any[]>>;
     /**
      * Ensures optional console methods don't throw.
-     * ✅ Verified atom of trusted knowledge
      */
     assert(): void;
     count(): void;

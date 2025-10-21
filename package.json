@@ -1,54 +1,55 @@
 {
-  "name": "@nan0web/log",
-  "version": "1.0.0",
-  "description": "A cross-platform Logger class that wraps console methods for both Node.js and browsers with consistent interface and streaming support.",
-  "main": "src/index.js",
-  "type": "module",
-  "scripts": {
-    "build": "tsc",
-    "dev": "node src/index.js",
-    "playground": "node playground/main.js",
-    "prepare": "husky",
-    "test": "node --test",
-    "test:coverage": "node --test --experimental-test-coverage --test-coverage-include=src/*.js",
-    "clean": "rm -rf .cache/ && rm -rf dist/",
-    "clean:modules": "rm -rf node_modules",
-    "test:docs": "node --test src/README.md.js",
-    "test:release": "node --test \"releases/**/*.test.js\"",
-    "test:coverage:collect": "nan0test coverage",
-    "test:status": "nan0test status",
-    "precommit": "npm test",
-    "prepush": "npm test"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/nan0web/logger.git"
-  },
-  "keywords": [
-    "logger",
-    "console",
-    "cross-platform",
-    "nodejs",
-    "browser"
-  ],
-  "author": "ЯRаСлав YaRaSLove <support@yaro.page>",
-  "license": "ISC",
-  "packageManager": "pnpm@10.11.0",
-  "types": "types/index.d.ts",
-  "files": [
-    "src",
-    "types"
-  ],
-  "devDependencies": {
-    "@nan0web/types": "workspace:*",
-    "husky": "^9.1.7",
-    "@nan0web/test": "workspace:*"
-  },
-  "dependencies": {
-    "moment": "^2.30.1",
-    "string-width": "^7.2.0"
-  },
-  "peerDependencies": {
-    "@nan0web/types": "^1.0.0"
-  }
+	"name": "@nan0web/log",
+	"version": "1.0.0",
+	"description": "A cross-platform Logger class that wraps console methods for both Node.js and browsers with consistent interface and streaming support.",
+	"main": "src/index.js",
+	"type": "module",
+	"scripts": {
+		"build": "tsc",
+		"dev": "node src/index.js",
+		"playground": "node playground/main.js",
+		"prepare": "husky",
+		"test": "node --test",
+		"test:coverage": "node --test --experimental-test-coverage --test-coverage-include=src/*.js",
+		"clean": "rm -rf .cache/ && rm -rf dist/",
+		"clean:modules": "rm -rf node_modules",
+		"test:docs": "node --test src/README.md.js",
+		"test:release": "node --test \"releases/**/*.test.js\"",
+		"test:coverage:collect": "nan0test coverage",
+		"test:status": "nan0test status",
+		"precommit": "npm test",
+		"prepush": "npm test"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/nan0web/logger.git"
+	},
+	"keywords": [
+		"logger",
+		"console",
+		"cross-platform",
+		"nodejs",
+		"browser"
+	],
+	"author": "ЯRаСлав YaRaSLove <support@yaro.page>",
+	"license": "ISC",
+	"packageManager": "pnpm@10.11.0",
+	"types": "types/index.d.ts",
+	"files": [
+		"src/**/*.js",
+		"!src/**/*.test.js",
+		"types/**/*.d.ts"
+	],
+	"devDependencies": {
+		"@nan0web/types": "workspace:*",
+		"husky": "^9.1.7",
+		"@nan0web/test": "workspace:*"
+	},
+	"dependencies": {
+		"moment": "^2.30.1",
+		"string-width": "^7.2.0"
+	},
+	"peerDependencies": {
+		"@nan0web/types": "^1.0.0"
+	}
 }

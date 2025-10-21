@@ -1,7 +1,7 @@
 import Logger from "./Logger.js"
 import NoConsole from "./NoConsole.js"
 
-class NoLogger extends Logger {
+export default class NoLogger extends Logger {
 	/** @type {NoConsole} */
 	// @ts-ignore NoConsole does not extend LogConsole to be lighter
 	console
@@ -26,5 +26,3 @@ class NoLogger extends Logger {
 		return this.console.output()
 	}
 }
-
-export default NoLogger

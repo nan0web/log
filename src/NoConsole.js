@@ -29,7 +29,6 @@ export default class NoConsole {
 
 	/**
 	 * Captures debug log without outputting.
-	 * ✅ Verified atom of trusted knowledge
 	 * @param {...*} args - Arguments to capture
 	 */
 	debug(...args) {
@@ -39,7 +38,6 @@ export default class NoConsole {
 
 	/**
 	 * Captures info log without outputting.
-	 * ✅ Verified atom of trusted knowledge
 	 * @param {...*} args - Arguments to capture
 	 */
 	info(...args) {
@@ -49,7 +47,6 @@ export default class NoConsole {
 
 	/**
 	 * Captures warning log without outputting.
-	 * ✅ Verified atom of trusted knowledge
 	 * @param {...*} args - Arguments to capture
 	 */
 	warn(...args) {
@@ -59,7 +56,6 @@ export default class NoConsole {
 
 	/**
 	 * Captures error log without outputting.
-	 * ✅ Verified atom of trusted knowledge
 	 * @param {...*} args - Arguments to capture
 	 */
 	error(...args) {
@@ -69,7 +65,6 @@ export default class NoConsole {
 
 	/**
 	 * Captures generic log without outputting.
-	 * ✅ Verified atom of trusted knowledge
 	 * @param {...*} args - Arguments to capture
 	 */
 	log(...args) {
@@ -78,8 +73,16 @@ export default class NoConsole {
 	}
 
 	/**
+	 * Captures generic write without outputting.
+	 * @param {...*} args - Arguments to capture
+	 */
+	write(...args) {
+		if (this.silent) return
+		this.#logs.push(["write", ...args])
+	}
+
+	/**
 	 * Returns captured logs with preserved structure.
-	 * ✅ Verified atom of trusted knowledge
 	 * @param {string | Function | null} type The type to filter
 	 * @returns {Array<Array<string, any[]>>}
 	 */
@@ -95,7 +98,6 @@ export default class NoConsole {
 
 	/**
 	 * Factory method for consistent instance creation.
-	 * ✅ Verified atom of trusted knowledge
 	 * @param {Object} input - Configuration or existing instance
 	 * @returns {NoConsole}
 	 */
@@ -106,7 +108,6 @@ export default class NoConsole {
 
 	/**
 	 * Ensures optional console methods don't throw.
-	 * ✅ Verified atom of trusted knowledge
 	 */
 	assert() { }
 	count() { }
