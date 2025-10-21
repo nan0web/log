@@ -6,19 +6,19 @@
 	"type": "module",
 	"scripts": {
 		"build": "tsc",
-		"dev": "node src/index.js",
 		"playground": "node playground/main.js",
-		"prepare": "husky",
 		"test": "node --test",
 		"test:coverage": "node --test --experimental-test-coverage --test-coverage-include=src/*.js",
-		"clean": "rm -rf .cache/ && rm -rf dist/",
-		"clean:modules": "rm -rf node_modules",
 		"test:docs": "node --test src/README.md.js",
 		"test:release": "node --test \"releases/**/*.test.js\"",
 		"test:coverage:collect": "nan0test coverage",
 		"test:status": "nan0test status",
 		"precommit": "npm test",
-		"prepush": "npm test"
+		"prepush": "npm test",
+		"prepare": "husky",
+		"release": "nan0release publish",
+		"clean": "rm -rf .cache/ && rm -rf dist/",
+		"clean:modules": "rm -rf node_modules"
 	},
 	"repository": {
 		"type": "git",
@@ -41,9 +41,10 @@
 		"types/**/*.d.ts"
 	],
 	"devDependencies": {
+		"@nan0web/release": "workspace:*",
+		"@nan0web/test": "workspace:*",
 		"@nan0web/types": "workspace:*",
-		"husky": "^9.1.7",
-		"@nan0web/test": "workspace:*"
+		"husky": "^9.1.7"
 	},
 	"dependencies": {
 		"moment": "^2.30.1",
