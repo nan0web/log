@@ -6,7 +6,7 @@
 	"type": "module",
 	"scripts": {
 		"build": "tsc",
-		"playground": "node playground/main.js",
+		"play": "node play/main.js",
 		"test": "node --test",
 		"test:coverage": "node --test --experimental-test-coverage --test-coverage-include=src/*.js",
 		"test:docs": "node --test src/README.md.js",

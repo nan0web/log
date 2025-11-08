@@ -13,6 +13,7 @@ import Console from "./Console.js"
  * @property {boolean} [spent=false] - Whether to log spent time
  * @property {Function} [stream=null] - Stream function for output
  * @property {Array} [formats=[]] - Format map array for different levels with icons/colors config
+ * @property {string} [prefix=''] - String to prepend to every log output (can contain ANSI styles)
  */
 
 /**
@@ -72,6 +73,8 @@ export default class Logger {
 	stream
 	/** @type {string[]} */
 	_previousLines = []
+	/** @type {string} */
+	prefix = ''
 
 	/**
 	 * @param {string | LoggerOptions} options
@@ -95,7 +98,8 @@ export default class Logger {
 				["warn", { icon: "∆", color: Logger.YELLOW }],
 				["error", { icon: "!", color: Logger.RED }],
 				["success", { icon: "✓", color: Logger.GREEN }],
-			]
+			],
+			prefix = ''
 		} = options
 
 		// @ts-ignore
@@ -112,6 +116,7 @@ export default class Logger {
 		this.spent = Boolean(spent)
 		this.stream = stream
 		this.at = Date.now()
+		this.prefix = String(prefix)
 
 		this.formats = new Map(formats)
 		this.formats.forEach(
@@ -192,7 +197,12 @@ export default class Logger {
 			if (format.color) prefix.unshift(format.color)
 		}
 		logArgs.push(...args)
-		return prefix.length ? prefix.join("") + logArgs.join(" ") + Logger.RESET : logArgs.join(" ")
+		const baseStr = prefix.length
+			? prefix.join("") + logArgs.join(" ") + Logger.RESET
+			: logArgs.join(" ")
+
+		// Apply user defined prefix (if any)
+		return this.prefix ? `${this.prefix}${baseStr}` : baseStr
 	}
 
 	/**

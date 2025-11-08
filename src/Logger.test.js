@@ -275,11 +275,11 @@ describe('Logger class functionality', () => {
 
 	it("should handle proper widths of the columns", () => {
 		const rows = [
-			[ "gpt-oss-120b", 0, 0, "65,536", "65,536", "2024-06-01"],
-			[ "qwen-3-32b", 0, 0, "65,536", "8,192", "2024-06-01"],
-			[ "qwen-3-235b-a22b-instruct-2507", 0, 0, "65,536", "8,192", "2024-06-01"],
-			[ "qwen-3-235b-a22b-thinking-2507", 0, 0, "65,536", "8,192", "2024-06-01"],
-			[ "qwen-3-coder-480b", 0, 0, "65,536", "8,192", "2024-06-01"]
+			["gpt-oss-120b", 0, 0, "65,536", "65,536", "2024-06-01"],
+			["qwen-3-32b", 0, 0, "65,536", "8,192", "2024-06-01"],
+			["qwen-3-235b-a22b-instruct-2507", 0, 0, "65,536", "8,192", "2024-06-01"],
+			["qwen-3-235b-a22b-thinking-2507", 0, 0, "65,536", "8,192", "2024-06-01"],
+			["qwen-3-coder-480b", 0, 0, "65,536", "8,192", "2024-06-01"]
 		]
 		const cols = ["Model name", "→ in 1MT", "← out 1MT", "Context T", "Output T", "Date"]
 		const logger = new Logger()
@@ -510,5 +510,31 @@ describe('Logger class functionality', () => {
 		assert(logStr.includes('test error'))
 
 		Object.defineProperty(process.stdout, 'isTTY', { value: originalIsTTY, configurable: true })
+	})
+
+	it('should prepend configured prefix to log messages', () => {
+		const noConsole = new NoConsole()
+		const prefix = Logger.style('nan•web', { bgColor: Logger.BG_MAGENTA, color: Logger.WHITE }) + ': '
+		const logger = new Logger({ prefix, console: noConsole })
+		logger.info('Hello terminal')
+		const output = noConsole.output()
+		assert.equal(output.length, 1)
+		const logged = output[0][1]
+		assert.ok(logged.startsWith(prefix), 'Log should start with the configured prefix')
+		assert.ok(logged.includes('Hello terminal'), 'Log should contain the original message')
+	})
+
+	it('should retain prefix when format overrides are applied', () => {
+		const noConsole = new NoConsole()
+		const prefix = Logger.style('nan•web', { bgColor: Logger.BG_MAGENTA, color: Logger.WHITE }) + ' :: '
+		const logger = new Logger({ prefix, icons: true, console: noConsole })
+		logger.setFormat('info', { icon: 'ℹ️' })
+		logger.info('Prefixed message')
+		const output = noConsole.output()
+		assert.equal(output.length, 1)
+		const logged = output[0][1]
+		// prefix + possible icon + space + message
+		assert.ok(logged.startsWith(prefix), 'Prefix should be at the very beginning')
+		assert.ok(logged.includes('Prefixed message'), 'Message should be present')
 	})
 })
