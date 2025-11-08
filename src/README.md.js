@@ -258,15 +258,20 @@ function testRender() {
 		]
 		// Capture table output by mocking console methods
 		logger.table(data, ["name", "age", "city"], { padding: 2, border: 1 })
-		assert.ok(logger)
-		const logs = logger.output()
-		// Verify that table was formatted correctly
-		assert.ok(logs[0][1].includes("---")) // border
-		assert.ok(logs[1][1].includes("name")) // header
-		assert.ok(logs[2][1].includes("John")) // data
-		assert.ok(logs[3][1].includes("Jane")) // data
-		assert.ok(logs[4][1].includes("Bob"))  // data
-		assert.ok(logs[5][1].includes("---"))  // border
+		// ------------------------
+		// name  age  city
+		// John  30   New York
+		// Jane  25   Los Angeles
+		// Bob   35   Chicago
+		// ------------------------
+		assert.equal(logger.output().map(([type, info]) => info).join("\n"), [
+			"------------------------",
+			"name  age  city         ",
+			"John  30   New York     ",
+			"Jane  25   Los Angeles  ",
+			"Bob   35   Chicago      ",
+			"------------------------",
+		].join("\n"))
 	})
 
 	/**
@@ -293,11 +298,21 @@ function testRender() {
 		logger.info(logger.cursorUp(2)) // ← \x1b[2A
 		logger.info(logger.cursorDown(1)) // ← \x1b[1B
 		logger.info(logger.clearLine()) // ← \x1b[2K\r
+		assert.equal(logger.output()[0][1], "\x1b[2A") // cursor up 2 lines
+		assert.equal(logger.output()[1][1], "\x1b[1B") // cursor down 1 line
+		assert.equal(logger.output()[2][1], "\x1b[2K\r") // clear line
+	})
 
-		const logs = logger.output()
-		assert.equal(logs[0][1], "\x1b[2A") // cursor up 2 lines
-		assert.equal(logs[1][1], "\x1b[1B") // cursor down 1 line
-		assert.equal(logs[2][1], "\x1b[2K\r") // clear line
+	/**
+	 * @docs
+	 * ### Prefix Option
+	 *
+	 * Logger can prepend a custom prefix to every log line.
+	 */
+	it("How to use Logger.prefix option?", () => {
+		const logger = new Logger({ prefix: "PREFIX> " })
+		logger.info("Message with prefix") // ← PREFIX> Message with prefix
+		assert.equal(logger.output()[0][1], "PREFIX> Message with prefix")
 	})
 
 	/**
@@ -406,10 +421,7 @@ function testRender() {
 	 *   * `clear()` – clear captured logs
 	 *   * `output(type)` – return captured logs (all or filtered by type)
 	 *   * `static from(input)` – create or return NoConsole instance
-	 */
-
-	/**
-	 * @docs
+	 *
 	 * ## Java•Script
 	 */
 	it("Uses `d.ts` files for autocompletion", () => {
@@ -428,10 +440,10 @@ function testRender() {
 		 * git clone https://github.com/nan0web/log.git
 		 * cd log
 		 * npm install
-		 * npm run playground
+		 * npm run play
 		 * ```
 		 */
-		assert.ok(String(pkg.scripts?.playground))
+		assert.ok(String(pkg.scripts?.play))
 		const response = await runSpawn("git", ["remote", "get-url", "origin"])
 		assert.ok(response.code === 0, "git command fails (e.g., not in a git repo)")
 		assert.ok(response.text.trim().endsWith(":nan0web/log.git"))
@@ -445,8 +457,9 @@ function testRender() {
 		assert.equal(pkg.scripts?.precommit, "npm test")
 		assert.equal(pkg.scripts?.prepush, "npm test")
 		assert.equal(pkg.scripts?.prepare, "husky")
-		// Note: CONTRIBUTING.md doesn't exist in current files, so this would fail if run
-		// But we're following the template exactly as requested
+		const text = await fs.loadDocument("CONTRIBUTING.md")
+		const str = String(text)
+		assert.ok(str.includes("# Contributing"))
 	})
 
 	/**
@@ -454,8 +467,9 @@ function testRender() {
 	 * ## License
 	 */
 	it("How to license ISC? - [check here](./LICENSE)", async () => {
-		// Note: LICENSE doesn't exist in current files, so this would fail if run
-		// But we're following the template exactly as requested
+		/** @docs */
+		const text = await fs.loadDocument("LICENSE")
+		assert.ok(String(text).includes("ISC"))
 	})
 }
 

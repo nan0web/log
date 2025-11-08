@@ -8,6 +8,7 @@
  * @property {boolean} [spent=false] - Whether to log spent time
  * @property {Function} [stream=null] - Stream function for output
  * @property {Array} [formats=[]] - Format map array for different levels with icons/colors config
+ * @property {string} [prefix=''] - String to prepend to every log output (can contain ANSI styles)
  */
 /**
  * Logger class for handling different log levels
@@ -137,6 +138,8 @@ export default class Logger {
     stream: Function | null;
     /** @type {string[]} */
     _previousLines: string[];
+    /** @type {string} */
+    prefix: string;
     currentLevel: any;
     /** @returns {boolean} */
     get isTTY(): boolean;
@@ -330,6 +333,10 @@ export type LoggerOptions = {
      * - Format map array for different levels with icons/colors config
      */
     formats?: any[] | undefined;
+    /**
+     * - String to prepend to every log output (can contain ANSI styles)
+     */
+    prefix?: string | undefined;
 };
 import Console from "./Console.js";
 import LoggerFormat from "./LoggerFormat.js";

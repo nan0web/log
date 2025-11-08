@@ -3,7 +3,7 @@
 /**
  * Playground example demonstrating the `prefix` option.
  *
- * The prefix is prepended to every log message. It can contain ANSI styles
+ * The `prefix` is prepended to every log message. It can contain ANSI styles
  * created with `Logger.style`. In this example we style the prefix with a
  * magenta background and white text, followed by a colon and a space.
  *

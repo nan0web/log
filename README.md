@@ -2,7 +2,7 @@
 
 |Package name|[Status](https://github.com/nan0web/monorepo/blob/main/system.md#написання-сценаріїв)|Documentation|Test coverage|Features|Npm version|
 |---|---|---|---|---|---|
- |[@nan0web/log](https://github.com/nan0web/logger/) |🟢 `98.7%` |🧪 [English 🏴󠁧󠁢󠁥󠁮󠁧󠁿](https://github.com/nan0web/logger/blob/main/README.md)<br />[Українською 🇺🇦](https://github.com/nan0web/logger/blob/main/docs/uk/README.md) |🟢 `94.1%` |✅ d.ts 📜 system.md 🕹️ playground |— |
+ |[@nan0web/log](https://github.com/nan0web/log/) |🟢 `98.9%` |🧪 [English 🏴󠁧󠁢󠁥󠁮󠁧󠁿](https://github.com/nan0web/log/blob/main/README.md)<br />[Українською 🇺🇦](https://github.com/nan0web/log/blob/main/docs/uk/README.md) |🟢 `94.2%` |✅ d.ts 📜 system.md 🕹️ playground |1.0.0 |
 
 A cross-platform Logger class that wraps console methods for both Node.js and browsers
 with consistent interface and streaming support.
@@ -136,6 +136,12 @@ const data = [
 ]
 // Capture table output by mocking console methods
 logger.table(data, ["name", "age", "city"], { padding: 2, border: 1 })
+// ------------------------
+// name  age  city
+// John  30   New York
+// Jane  25   Los Angeles
+// Bob   35   Chicago
+// ------------------------
 ```
 
 How to style text with colors and background?
@@ -155,8 +161,15 @@ const logger = new Logger()
 logger.info(logger.cursorUp(2)) // ← \x1b[2A
 logger.info(logger.cursorDown(1)) // ← \x1b[1B
 logger.info(logger.clearLine()) // ← \x1b[2K\r
+```
+### Prefix Option
 
-const logs = logger.output()
+Logger can prepend a custom prefix to every log line.
+
+How to use Logger.prefix option?
+```js
+const logger = new Logger({ prefix: "PREFIX> " })
+logger.info("Message with prefix") // ← PREFIX> Message with prefix
 ```
 ## API
 
@@ -263,8 +276,6 @@ Extends `Logger`.
   * `output(type)` – return captured logs (all or filtered by type)
   * `static from(input)` – create or return NoConsole instance
 
-/**
-@docs
 ## Java•Script
 
 Uses `d.ts` files for autocompletion
@@ -277,7 +288,7 @@ How to run playground script?
 git clone https://github.com/nan0web/log.git
 cd log
 npm install
-npm run playground
+npm run play
 ```
 
 ## Contributing
@@ -287,8 +298,3 @@ How to contribute? - [check here](./CONTRIBUTING.md)
 ## License
 
 How to license ISC? - [check here](./LICENSE)
-```js
-// Note: LICENSE doesn't exist in current files, so this would fail if run
-// But we're following the template exactly as requested
-})
-}
