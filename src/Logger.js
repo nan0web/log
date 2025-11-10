@@ -14,11 +14,12 @@ import Console from "./Console.js"
  * @property {Function} [stream=null] - Stream function for output
  * @property {Array} [formats=[]] - Format map array for different levels with icons/colors config
  * @property {string} [prefix=''] - String to prepend to every log output (can contain ANSI styles)
+ * @property {number} [fps] - Desired frames‑per‑second rate. If omitted, FPS throttling is disabled.
  */
 
 /**
- * Logger class for handling different log levels
- * Supports debug, info, warn, error, and log methods
+ * Logger class for handling different log levels.
+ * Added optional FPS throttling.
  */
 export default class Logger {
 	static LOGO = [
@@ -75,9 +76,13 @@ export default class Logger {
 	_previousLines = []
 	/** @type {string} */
 	prefix = ''
+	/** @type {number|null} FPS throttling – null disables throttling */
+	fps = null
+	/** @type {number} */
+	prev = 0
 
 	/**
-	 * @param {string | LoggerOptions} options
+	 * @param {string|LoggerOptions} options
 	 */
 	constructor(options = {}) {
 		if ("string" === typeof options) {
@@ -99,14 +104,15 @@ export default class Logger {
 				["error", { icon: "!", color: Logger.RED }],
 				["success", { icon: "✓", color: Logger.GREEN }],
 			],
-			prefix = ''
+			prefix = '',
+			fps // optional
 		} = options
 
 		// @ts-ignore
 		this.console = new Console({ console: consoleInstance })
 		this.level = level
 		this.icons = Boolean(icons)
-		// Auto-detect chromo: if explicitly set to false, disable; if true, enable only if TTY; if unspecified, detect based on TTY
+		// Auto‑detect chromo: if explicitly set to false, disable; if true, enable only if TTY; if unspecified, detect based on TTY
 		let effectiveChromo = Boolean(chromoOption)
 		if (!effectiveChromo && !this.isTTY) {
 			effectiveChromo = true
@@ -118,6 +124,10 @@ export default class Logger {
 		this.at = Date.now()
 		this.prefix = String(prefix)
 
+		// fps handling – if provided, enable throttling, otherwise disable
+		this.fps = typeof fps === 'number' ? fps : null
+		this.prev = 0
+
 		this.formats = new Map(formats)
 		this.formats.forEach(
 			(opts, target) => this.formats.set(target, LoggerFormat.from(opts))
@@ -128,6 +138,21 @@ export default class Logger {
 	/** @returns {boolean} */
 	get isTTY() {
 		return !("undefined" !== typeof process && !process.stdout?.isTTY)
+	}
+
+	/**
+	 * FPS throttle – returns true when throttling is disabled (fps === null)
+	 * or when enough time has passed.
+	 * @returns {boolean}
+	 */
+	inFps() {
+		if (this.fps === null) return true
+		const elapsed = Date.now() - this.prev
+		if (elapsed > 1000 / this.fps) {
+			this.prev = Date.now()
+			return true
+		}
+		return false
 	}
 
 	/**
@@ -230,7 +255,7 @@ export default class Logger {
 
 	/**
 	 * Log to a stream. Use setStream() to define stream function.
-	 * @param {string} str - Arguments to log
+	 * @param {string} str
 	 */
 	async broadcast(str) {
 		if (!this.stream) return
@@ -238,95 +263,107 @@ export default class Logger {
 			await this.stream(str)
 			return
 		} catch (error) {
-			// Fallback to file writing or console error if stream fails
 			this.error("Failed to write to stream:", error)
 		}
 	}
 
 	/**
+	 * Calculate how many terminal rows a string will occupy.
+	 *
+	 * @param {string} str - Formatted string to evaluate
+	 * @returns {number} Number of rows needed
+	 */
+	_calculateRows(str) {
+		const clean = Logger.stripANSI(str)
+		const lines = clean.split("\n")
+		const width = this.getWindowSize()[0] || 80
+		let rows = 0
+		for (const line of lines) {
+			const lineWidth = stringWidth(line) || 0
+			rows += Math.max(1, Math.ceil(lineWidth / width))
+		}
+		return rows
+	}
+
+	/**
+	 * Prints a message
+	 * @param {string} level
+	 * @param {...any} args
+	 * @returns {number}
+	 */
+	_print(level, ...args) {
+		const l = Logger.LEVELS[level] ?? 1
+		if (this.currentLevel <= l && this.inFps()) {
+			const str = this._argsWith(level, ...args)
+			const fn = "success" === level ? "info" : level
+			this.console[fn](str)
+			this._storeLine(str)
+			this.broadcast(str)
+			return this._calculateRows(str)
+		}
+		return 0
+	}
+
+	/**
 	 * Log debug message
-	 * @param {...any} args - Arguments to log
+	 * @param {...any} args
+	 * @returns {number}
 	 */
 	debug(...args) {
-		if (this.currentLevel <= 0) {
-			const str = this._argsWith("debug", ...args)
-			this.console.debug(str)
-			this._storeLine(str)
-			this.broadcast(str)
-		}
+		return this._print("debug", ...args)
 	}
-
 	/**
 	 * Log info message
-	 * @param {...any} args - Arguments to log
+	 * @param {...any} args
+	 * @returns {number}
 	 */
 	info(...args) {
-		if (this.currentLevel <= 1) {
-			const str = this._argsWith("info", ...args)
-			this.console.info(str)
-			this._storeLine(str)
-			this.broadcast(str)
-		}
+		return this._print("info", ...args)
 	}
-
 	/**
 	 * Log warning message
-	 * @param {...any} args - Arguments to log
+	 * @param {...any} args
+	 * @returns {number}
 	 */
 	warn(...args) {
-		if (this.currentLevel <= 2) {
-			const str = this._argsWith("warn", ...args)
-			this.console.warn(str)
-			this._storeLine(str)
-			this.broadcast(str)
-		}
+		return this._print("warn", ...args)
 	}
-
 	/**
 	 * Log error message
-	 * @param {...any} args - Arguments to log
+	 * @param {...any} args
+	 * @returns {number}
 	 */
 	error(...args) {
-		if (this.currentLevel <= 3) {
-			const str = this._argsWith("error", ...args)
-			this.console.error(str)
-			this._storeLine(str)
-			this.broadcast(str)
-		}
+		return this._print("error", ...args)
 	}
-
 	/**
 	 * Log success info message
-	 * @param {...any} args - Arguments to log
+	 * @param {...any} args
+	 * @returns {number}
 	 */
 	success(...args) {
-		if (this.currentLevel <= 1) {
-			const str = this._argsWith("success", ...args)
-			this.console.info(str)
-			this._storeLine(str)
-			this.broadcast(str)
-		}
+		return this._print("success", ...args)
 	}
-
 	/**
-	 * Log message
-	 * @param {...any} args - Arguments to log
+	 * Log generic message
+	 * @param {...any} args
+	 * @returns {number|undefined}
 	 */
 	log(...args) {
-		if (this.currentLevel <= 1) {
+		if (this.currentLevel <= 1 && this.inFps()) {
 			const str = this._argsWith("log", ...args)
 			this.console.log(str)
 			this._storeLine(str)
 			this.broadcast(str)
+			return this._calculateRows(str)
 		}
+		return undefined
 	}
 
 	/**
 	 * Create Logger instance from input
-	 * Returns input if already a Logger, otherwise creates new instance
-	 *
-	 * @param {Object|string} input - Raw input for configuration or log level string
-	 * @returns {Logger} - New instance with validated configuration
+	 * @param {Object|string} input
+	 * @returns {Logger}
 	 */
 	static from(input) {
 		if (input instanceof Logger) return input
@@ -336,8 +373,8 @@ export default class Logger {
 
 	/**
 	 * Detect log level from command line arguments
-	 * @param {string[]} argv - Command line arguments
-	 * @returns {string | undefined} Level
+	 * @param {string[]} argv
+	 * @returns {string|undefined}
 	 */
 	static detectLevel(argv = []) {
 		for (const arg of argv) {
@@ -351,8 +388,8 @@ export default class Logger {
 
 	/**
 	 * Create a LoggerFormat instance from input
-	 * @param {string | object} name - Format name or options object
-	 * @param {any | undefined} value - Format value (if name is a string)
+	 * @param {string|object} name
+	 * @param {any|undefined} value
 	 * @returns {LoggerFormat}
 	 */
 	static createFormat(name, value) {
@@ -364,12 +401,9 @@ export default class Logger {
 
 	/**
 	 * Style a value with background and text colors
-	 * @param {any} value - Value to style
-	 * @param {object} styleOptions - Styling options
-	 * @param {string} [styleOptions.bgColor] - Background color
-	 * @param {string} [styleOptions.color] - Text color
-	 * @param {boolean} [styleOptions.stripped=false] - If true, strip ANSI codes instead of applying
-	 * @returns {string} - Styled value as a string
+	 * @param {any} value
+	 * @param {object} styleOptions
+	 * @returns {string}
 	 */
 	static style(value, styleOptions = {}) {
 		const { bgColor, color, stripped = false } = styleOptions
@@ -392,8 +426,8 @@ export default class Logger {
 
 	/**
 	 * Strip ANSI escape codes from a string
-	 * @param {string} str - Input string with potential ANSI codes
-	 * @returns {string} - String without ANSI codes
+	 * @param {string} str
+	 * @returns {string}
 	 */
 	static stripANSI(str) {
 		return str.replace(/\x1B[@-_][0-?]*[ -/]*[@-~]/g, '')
@@ -401,10 +435,10 @@ export default class Logger {
 
 	/**
 	 * Calculate progress percentage
-	 * @param {number} i - Current progress value
-	 * @param {number} len - Total progress length
-	 * @param {number} fixed - Number of decimal places to fix
-	 * @returns {string} - Progress percentage as a string
+	 * @param {number} i
+	 * @param {number} len
+	 * @param {number} fixed
+	 * @returns {string}
 	 */
 	static progress(i, len, fixed = 1) {
 		if (len === 0) return '0'
@@ -413,9 +447,9 @@ export default class Logger {
 
 	/**
 	 * Calculate time elapsed since checkpoint
-	 * @param {number} checkpoint - Timestamp to calculate from
-	 * @param {number} fixed - Number of decimal places to fix
-	 * @returns {string} - Time elapsed in seconds as a string
+	 * @param {number} checkpoint
+	 * @param {number} fixed
+	 * @returns {string}
 	 */
 	static spent(checkpoint, fixed = 2) {
 		return ((Date.now() - checkpoint) / 1_000).toFixed(fixed)
@@ -423,9 +457,9 @@ export default class Logger {
 
 	/**
 	 * Format time duration
-	 * @param {number} duration - Duration in milliseconds
-	 * @param {string} format - Format string (e.g., DD HH:mm:ss.SSS)
-	 * @returns {string} - Formatted time string
+	 * @param {number} duration
+	 * @param {string} format
+	 * @returns {string}
 	 */
 	static toTime(duration, format = 'DD HH:mm:ss.SSS') {
 		const dur = new Date(duration)
@@ -448,19 +482,10 @@ export default class Logger {
 
 	/**
 	 * Format table data
-	 * @param {Array<any>} data - Table data
-	 * @param {string[]} columns - Columns to filter
-	 * @param {object} options - Format options
-	 * @param {Array<number>} [options.widths=[]] - Column widths
-	 * @param {string} [options.space=" "] - Space character
-	 * @param {number} [options.padding=1] - Padding width
-	 * @param {string|string[]} [options.aligns="left"] - Text aligns
-	 * @param {string} [options.prefix=""] - Text prefix
-	 * @param {boolean} [options.silent=false] - If silent no output provided
-	 * @param {number} [options.border=0]
-	 * @param {number} [options.headBorder=0]
-	 * @param {number} [options.footBorder=0]
-	 * @returns {string[]} - Formatted table rows
+	 * @param {Array<any>} data
+	 * @param {string[]} columns
+	 * @param {object} options
+	 * @returns {string[]}
 	 */
 	table(data, columns, options = {}) {
 		const {
@@ -579,11 +604,7 @@ export default class Logger {
 	 * Move cursor up in the terminal
 	 * @param {number} [lines] - Number of lines to move up
 	 * @param {boolean} [clearLines] - If true uses this.clearLine() for every line of lines.
-	 * @returns {string} - Cursor up sequence string
-	 *
-	 * @example
-	 * logger.cursorUp(3, true) // clear lines and returns the string
-	 * logger.cursorUp(3) // returns the string
+	 * @returns {string}
 	 */
 	cursorUp(lines = 1, clearLines = false) {
 		const str = `\x1b[${lines}A`
@@ -591,7 +612,6 @@ export default class Logger {
 		this.write(str)
 		for (let i = 0; i < Math.abs(lines); i++) {
 			this.clearLine()
-			// this.write("\n")
 		}
 		this.console.info(str)
 		return str
@@ -599,14 +619,8 @@ export default class Logger {
 
 	/**
 	 * Move cursor down in the terminal
-	 * ```js
-	 * const logger = new Logger()
-	 * logger.info("This is a progress")
-	 * logger.info(logger.cursorDown())
-	 * logger.info("Under the previous line")
-	 * ```
 	 * @param {number} lines - Number of lines to move down
-	 * @returns {string} - Cursor down sequence string
+	 * @returns {string}
 	 */
 	cursorDown(lines = 1) {
 		return `\x1b[${lines}B`
@@ -614,7 +628,7 @@ export default class Logger {
 
 	/**
 	 * Write string directly to stdout
-	 * @param {string} str - String to write
+	 * @param {string} str
 	 */
 	write(str) {
 		if ("undefined" === typeof process?.stdout?.write) {
@@ -640,11 +654,6 @@ export default class Logger {
 
 	/**
 	 * Clear the current line in terminal.
-	 * For progress use it with logger.cursorUp()
-	 * ```js
-	 * logger.clearLine(logger.cursorUp())
-	 * logger.info("The same line")
-	 * ```
 	 * @param {string} str - String to write before clearing
 	 */
 	clearLine(str = "") {
@@ -656,69 +665,53 @@ export default class Logger {
 	}
 
 	/**
-	 * Returns array is of the type `[numColumns, numRows]` where `numColumns` and
-	 * `numRows` represent the number of columns and rows in the corresponding TTY.
+	 * Returns array `[numColumns, numRows]` of the TTY size.
 	 * @returns {number[]}
 	 */
 	getWindowSize() {
 		if ("undefined" === typeof process?.stdout?.getWindowSize) {
 			return [80, 40]
 		}
+		// @ts-ignore
 		return process.stdout.getWindowSize()
 	}
 
 	/**
-	 * Cuts a string to fit within a specified width, taking into account
-	 * visible string width (including handling of ANSI codes, full-width characters, etc.).
-	 *
-	 * @param {string} str - The input string to cut
-	 * @param {number} [width=this.getWindowSize()[0]] - Maximum width allowed for the string.
-	 *   If not provided, defaults to the current terminal window width.
-	 * @returns {string} The original string if it fits within the width,
-	 *   otherwise the string truncated to fit the specified width.
-	 *
-	 * @example
-	 * // Assuming terminal width is 80
-	 * cut("Hello, world!") // returns "Hello, world!"
-	 * cut("Hello".repeat(20), 13) // returns "HelloHelloHel" (truncated to fit 13 columns)
+	 * Cuts a string to fit within a specified width.
+	 * @param {string} str
+	 * @param {number} [width=this.getWindowSize()[0]]
+	 * @returns {string}
 	 */
 	cut(str, width = this.getWindowSize()[0]) {
-		const length = stringWidth(Logger.stripANSI(str)) // Strip ANSI for accurate width calculation
+		const length = stringWidth(Logger.stripANSI(str))
 		if (length <= width) return str
-		// Truncate while preserving ANSI sequences is complex; for simplicity, strip and truncate
 		const stripped = Logger.stripANSI(str)
 		const truncated = stripped.slice(0, width)
-		// This is approximate; for full ANSI preservation, a more advanced parser is needed
 		return truncated
 	}
 
 	/**
-	 * Erase the previous line by covering it with spaces or specified character
-	 * @param {string} char - Character to use for erasing (default: space)
-	 * @returns {string} - Erase sequence string
+	 * Erase the previous line by covering it with spaces or a character.
+	 * @param {string} char
+	 * @returns {string}
 	 */
 	erase(char = " ") {
 		if (this._previousLines.length === 0) {
 			return ""
 		}
-
 		const lastLine = this._previousLines[this._previousLines.length - 1]
-		if (!lastLine) {
-			return ""
-		}
-		const windowSize = this.getWindowSize()
-		const columns = windowSize[0]
-
+		if (!lastLine) return ""
+		const columns = this.getWindowSize()[0]
 		return char.repeat(Math.max(0, columns - stringWidth(Logger.stripANSI(lastLine))))
 	}
 
 	/**
 	 * Store the last output line for potential erasing
-	 * @param {string} line - The line that was just output
+	 * @param {string} line
 	 * @private
 	 */
 	_storeLine(line) {
-		this._previousLines.push(Logger.stripANSI(line)) // Store stripped for accurate length
+		this._previousLines.push(Logger.stripANSI(line))
 		if (this._previousLines.length > 10) {
 			this._previousLines.shift()
 		}
@@ -726,12 +719,12 @@ export default class Logger {
 
 	/**
 	 * Create a progress bar
-	 * @param {number} i - Current progress index
-	 * @param {number} len - Total progress length
-	 * @param {number} width - Progress bar width
-	 * @param {string} char - Progress bar character
-	 * @param {string} space - Space character
-	 * @returns {string} - Progress bar string
+	 * @param {number} i
+	 * @param {number} len
+	 * @param {number} width
+	 * @param {string} char
+	 * @param {string} space
+	 * @returns {string}
 	 */
 	static bar(i, len, width = 12, char = '█', space = '·') {
 		if (0 === len) len = Number.MAX_SAFE_INTEGER

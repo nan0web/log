@@ -537,4 +537,32 @@ describe('Logger class functionality', () => {
 		assert.ok(logged.startsWith(prefix), 'Prefix should be at the very beginning')
 		assert.ok(logged.includes('Prefixed message'), 'Message should be present')
 	})
+
+	it('should return correct rows count for short message', () => {
+		const logger = new Logger({ console: new NoConsole() })
+		const rows = logger.info('short')
+		assert.equal(rows, 1)
+	})
+
+	it('should return correct rows count for long message exceeding width', () => {
+		const logger = new Logger({ console: new NoConsole() })
+		const long = 'a'.repeat(100) // exceeds default width 80
+		const rows = logger.info(long)
+		assert.equal(rows, 2)
+	})
+
+	it('FPS throttling should limit output when fps is set', () => {
+		const noConsole = new NoConsole()
+		const logger = new Logger({ console: noConsole, fps: 5 })
+		// Force enough time elapsed for first call
+		logger.prev = Date.now() - 300
+		const first = logger.info('first')
+		assert.ok(first > 0, 'first call should log')
+		// Immediate second call – should be throttled
+		const second = logger.info('second')
+		assert.equal(second, 0, 'second call should be throttled')
+		const out = noConsole.output()
+		assert.equal(out.length, 1, 'only one log entry should be recorded')
+		assert.ok(out[0][1].includes('first'))
+	})
 })
