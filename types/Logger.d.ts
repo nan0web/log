@@ -9,10 +9,11 @@
  * @property {Function} [stream=null] - Stream function for output
  * @property {Array} [formats=[]] - Format map array for different levels with icons/colors config
  * @property {string} [prefix=''] - String to prepend to every log output (can contain ANSI styles)
+ * @property {number} [fps] - Desired frames‑per‑second rate. If omitted, FPS throttling is disabled.
  */
 /**
- * Logger class for handling different log levels
- * Supports debug, info, warn, error, and log methods
+ * Logger class for handling different log levels.
+ * Added optional FPS throttling.
  */
 export default class Logger {
     static LOGO: string;
@@ -43,79 +44,70 @@ export default class Logger {
     };
     /**
      * Create Logger instance from input
-     * Returns input if already a Logger, otherwise creates new instance
-     *
-     * @param {Object|string} input - Raw input for configuration or log level string
-     * @returns {Logger} - New instance with validated configuration
+     * @param {Object|string} input
+     * @returns {Logger}
      */
     static from(input: any | string): Logger;
     /**
      * Detect log level from command line arguments
-     * @param {string[]} argv - Command line arguments
-     * @returns {string | undefined} Level
+     * @param {string[]} argv
+     * @returns {string|undefined}
      */
     static detectLevel(argv?: string[]): string | undefined;
     /**
      * Create a LoggerFormat instance from input
-     * @param {string | object} name - Format name or options object
-     * @param {any | undefined} value - Format value (if name is a string)
+     * @param {string|object} name
+     * @param {any|undefined} value
      * @returns {LoggerFormat}
      */
     static createFormat(name: string | object, value: any | undefined): LoggerFormat;
     /**
      * Style a value with background and text colors
-     * @param {any} value - Value to style
-     * @param {object} styleOptions - Styling options
-     * @param {string} [styleOptions.bgColor] - Background color
-     * @param {string} [styleOptions.color] - Text color
-     * @param {boolean} [styleOptions.stripped=false] - If true, strip ANSI codes instead of applying
-     * @returns {string} - Styled value as a string
+     * @param {any} value
+     * @param {object} styleOptions
+     * @returns {string}
      */
-    static style(value: any, styleOptions?: {
-        bgColor?: string | undefined;
-        color?: string | undefined;
-        stripped?: boolean | undefined;
-    }): string;
+    static style(value: any, styleOptions?: object): string;
     /**
      * Strip ANSI escape codes from a string
-     * @param {string} str - Input string with potential ANSI codes
-     * @returns {string} - String without ANSI codes
+     * @param {string} str
+     * @returns {string}
      */
     static stripANSI(str: string): string;
     /**
      * Calculate progress percentage
-     * @param {number} i - Current progress value
-     * @param {number} len - Total progress length
-     * @param {number} fixed - Number of decimal places to fix
-     * @returns {string} - Progress percentage as a string
+     * @param {number} i
+     * @param {number} len
+     * @param {number} fixed
+     * @returns {string}
      */
     static progress(i: number, len: number, fixed?: number): string;
     /**
      * Calculate time elapsed since checkpoint
-     * @param {number} checkpoint - Timestamp to calculate from
-     * @param {number} fixed - Number of decimal places to fix
-     * @returns {string} - Time elapsed in seconds as a string
+     * @param {number} checkpoint
+     * @param {number} fixed
+     * @returns {string}
      */
     static spent(checkpoint: number, fixed?: number): string;
     /**
      * Format time duration
-     * @param {number} duration - Duration in milliseconds
-     * @param {string} format - Format string (e.g., DD HH:mm:ss.SSS)
-     * @returns {string} - Formatted time string
+     * @param {number} duration
+     * @param {string} format
+     * @returns {string}
      */
     static toTime(duration: number, format?: string): string;
     /**
      * Create a progress bar
-     * @param {number} i - Current progress index
-     * @param {number} len - Total progress length
-     * @param {number} width - Progress bar width
-     * @param {string} char - Progress bar character
-     * @param {string} space - Space character
-     * @returns {string} - Progress bar string
+     * @param {number} i
+     * @param {number} len
+     * @param {number} width
+     * @param {string} char
+     * @param {string} space
+     * @returns {string}
      */
     static bar(i: number, len: number, width?: number, char?: string, space?: string): string;
     /**
-     * @param {string | LoggerOptions} options
+     * @param {string|LoggerOptions} options
      */
     constructor(options?: string | LoggerOptions);
     /** @type {string} */
@@ -140,9 +132,19 @@ export default class Logger {
     _previousLines: string[];
     /** @type {string} */
     prefix: string;
+    /** @type {number|null} FPS throttling – null disables throttling */
+    fps: number | null;
+    /** @type {number} */
+    prev: number;
     currentLevel: any;
     /** @returns {boolean} */
     get isTTY(): boolean;
+    /**
+     * FPS throttle – returns true when throttling is disabled (fps === null)
+     * or when enough time has passed.
+     * @returns {boolean}
+     */
+    inFps(): boolean;
     /**
      * Prepare arguments with formatting for specified log level
      * @param {string} target - Log level target
@@ -163,92 +165,83 @@ export default class Logger {
     setStream(streamFunction: Function): void;
     /**
      * Log to a stream. Use setStream() to define stream function.
-     * @param {string} str - Arguments to log
+     * @param {string} str
      */
     broadcast(str: string): Promise<void>;
     /**
-     * Log debug message
-     * @param {...any} args - Arguments to log
+     * Calculate how many terminal rows a string will occupy.
+     *
+     * @param {string} str - Formatted string to evaluate
+     * @returns {number} Number of rows needed
      */
-    debug(...args: any[]): void;
+    _calculateRows(str: string): number;
+    /**
+     * Prints a message
+     * @param {string} level
+     * @param {...any} args
+     * @returns {number}
+     */
+    _print(level: string, ...args: any[]): number;
+    /**
+     * Log debug message
+     * @param {...any} args
+     * @returns {number}
+     */
+    debug(...args: any[]): number;
     /**
      * Log info message
-     * @param {...any} args - Arguments to log
+     * @param {...any} args
+     * @returns {number}
      */
-    info(...args: any[]): void;
+    info(...args: any[]): number;
     /**
      * Log warning message
-     * @param {...any} args - Arguments to log
+     * @param {...any} args
+     * @returns {number}
      */
-    warn(...args: any[]): void;
+    warn(...args: any[]): number;
     /**
      * Log error message
-     * @param {...any} args - Arguments to log
+     * @param {...any} args
+     * @returns {number}
      */
-    error(...args: any[]): void;
+    error(...args: any[]): number;
     /**
      * Log success info message
-     * @param {...any} args - Arguments to log
+     * @param {...any} args
+     * @returns {number}
      */
-    success(...args: any[]): void;
+    success(...args: any[]): number;
     /**
-     * Log message
-     * @param {...any} args - Arguments to log
+     * Log generic message
+     * @param {...any} args
+     * @returns {number|undefined}
      */
-    log(...args: any[]): void;
+    log(...args: any[]): number | undefined;
     /**
      * Format table data
-     * @param {Array<any>} data - Table data
-     * @param {string[]} columns - Columns to filter
-     * @param {object} options - Format options
-     * @param {Array<number>} [options.widths=[]] - Column widths
-     * @param {string} [options.space=" "] - Space character
-     * @param {number} [options.padding=1] - Padding width
-     * @param {string|string[]} [options.aligns="left"] - Text aligns
-     * @param {string} [options.prefix=""] - Text prefix
-     * @param {boolean} [options.silent=false] - If silent no output provided
-     * @param {number} [options.border=0]
-     * @param {number} [options.headBorder=0]
-     * @param {number} [options.footBorder=0]
-     * @returns {string[]} - Formatted table rows
+     * @param {Array<any>} data
+     * @param {string[]} columns
+     * @param {object} options
+     * @returns {string[]}
      */
-    table(data: Array<any>, columns: string[], options?: {
-        widths?: number[] | undefined;
-        space?: string | undefined;
-        padding?: number | undefined;
-        aligns?: string | string[] | undefined;
-        prefix?: string | undefined;
-        silent?: boolean | undefined;
-        border?: number | undefined;
-        headBorder?: number | undefined;
-        footBorder?: number | undefined;
-    }): string[];
+    table(data: Array<any>, columns: string[], options?: object): string[];
     /**
      * Move cursor up in the terminal
      * @param {number} [lines] - Number of lines to move up
      * @param {boolean} [clearLines] - If true uses this.clearLine() for every line of lines.
-     * @returns {string} - Cursor up sequence string
-     *
-     * @example
-     * logger.cursorUp(3, true) // clear lines and returns the string
-     * logger.cursorUp(3) // returns the string
+     * @returns {string}
      */
     cursorUp(lines?: number | undefined, clearLines?: boolean | undefined): string;
     /**
      * Move cursor down in the terminal
-     * ```js
-     * const logger = new Logger()
-     * logger.info("This is a progress")
-     * logger.info(logger.cursorDown())
-     * logger.info("Under the previous line")
-     * ```
      * @param {number} lines - Number of lines to move down
-     * @returns {string} - Cursor down sequence string
+     * @returns {string}
      */
     cursorDown(lines?: number): string;
     /**
      * Write string directly to stdout
-     * @param {string} str - String to write
+     * @param {string} str
      */
     write(str: string): void;
     /**
@@ -257,45 +250,30 @@ export default class Logger {
     clear(): void;
     /**
      * Clear the current line in terminal.
-     * For progress use it with logger.cursorUp()
-     * ```js
-     * logger.clearLine(logger.cursorUp())
-     * logger.info("The same line")
-     * ```
      * @param {string} str - String to write before clearing
      */
     clearLine(str?: string): void;
     /**
-     * Returns array is of the type `[numColumns, numRows]` where `numColumns` and
-     * `numRows` represent the number of columns and rows in the corresponding TTY.
+     * Returns array `[numColumns, numRows]` of the TTY size.
      * @returns {number[]}
      */
     getWindowSize(): number[];
     /**
-     * Cuts a string to fit within a specified width, taking into account
-     * visible string width (including handling of ANSI codes, full-width characters, etc.).
-     *
-     * @param {string} str - The input string to cut
-     * @param {number} [width=this.getWindowSize()[0]] - Maximum width allowed for the string.
-     *   If not provided, defaults to the current terminal window width.
-     * @returns {string} The original string if it fits within the width,
-     *   otherwise the string truncated to fit the specified width.
-     *
-     * @example
-     * // Assuming terminal width is 80
-     * cut("Hello, world!") // returns "Hello, world!"
-     * cut("Hello".repeat(20), 13) // returns "HelloHelloHel" (truncated to fit 13 columns)
+     * Cuts a string to fit within a specified width.
+     * @param {string} str
+     * @param {number} [width=this.getWindowSize()[0]]
+     * @returns {string}
      */
     cut(str: string, width?: number | undefined): string;
     /**
-     * Erase the previous line by covering it with spaces or specified character
-     * @param {string} char - Character to use for erasing (default: space)
-     * @returns {string} - Erase sequence string
+     * Erase the previous line by covering it with spaces or a character.
+     * @param {string} char
+     * @returns {string}
      */
     erase(char?: string): string;
     /**
      * Store the last output line for potential erasing
-     * @param {string} line - The line that was just output
+     * @param {string} line
      * @private
      */
     private _storeLine;
@@ -337,6 +315,10 @@ export type LoggerOptions = {
      * - String to prepend to every log output (can contain ANSI styles)
      */
     prefix?: string | undefined;
+    /**
+     * - Desired frames‑per‑second rate. If omitted, FPS throttling is disabled.
+     */
+    fps?: number | undefined;
 };
 import Console from "./Console.js";
 import LoggerFormat from "./LoggerFormat.js";
