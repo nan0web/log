@@ -137,6 +137,10 @@ export default class Logger {
 
 	/** @returns {boolean} */
 	get isTTY() {
+		return Logger.isTTY
+	}
+	/** @returns {boolean} */
+	static get isTTY() {
 		return !("undefined" !== typeof process && !process.stdout?.isTTY)
 	}
 
@@ -350,14 +354,7 @@ export default class Logger {
 	 * @returns {number|undefined}
 	 */
 	log(...args) {
-		if (this.currentLevel <= 1 && this.inFps()) {
-			const str = this._argsWith("log", ...args)
-			this.console.log(str)
-			this._storeLine(str)
-			this.broadcast(str)
-			return this._calculateRows(str)
-		}
-		return undefined
+		return this._print("log", ...args)
 	}
 
 	/**
@@ -415,10 +412,14 @@ export default class Logger {
 		const styledValue = []
 
 		value.map(String).forEach(row => {
-			if (color) styledValue.push(Logger[color.toUpperCase()] || color)
-			if (bgColor) styledValue.push(Logger[`BG_${bgColor.toUpperCase()}`] || bgColor)
+			if (this.isTTY) {
+				if (color) styledValue.push(Logger[color.toUpperCase()] || color)
+				if (bgColor) styledValue.push(Logger[`BG_${bgColor.toUpperCase()}`] || bgColor)
+			}
 			styledValue.push(row)
-			styledValue.push(Logger.RESET)
+			if (this.isTTY) {
+				styledValue.push(Logger.RESET)
+			}
 			styledValue.push("\n")
 		})
 		return styledValue.join("").slice(0, -1)
@@ -601,19 +602,62 @@ export default class Logger {
 	}
 
 	/**
+ * Hide the cursor in the terminal.
+ *
+ * @returns {string} ANSI escape sequence used to hide the cursor,
+ *   or an empty string when not in a TTY environment.
+ */
+	cursorHide() {
+		if (!this.isTTY) {
+			return ''
+		}
+		const seq = '\x1b[?25l'
+		this.write(seq)
+		return seq
+	}
+
+	/**
+	 * Show the cursor in the terminal.
+	 *
+	 * @returns {string} ANSI escape sequence used to show the cursor,
+	 *   or an empty string when not in a TTY environment.
+	 */
+	cursorShow() {
+		if (!this.isTTY) {
+			return ''
+		}
+		const seq = '\x1b[?25h'
+		this.write(seq)
+		return seq
+	}
+
+	/**
 	 * Move cursor up in the terminal
 	 * @param {number} [lines] - Number of lines to move up
 	 * @param {boolean} [clearLines] - If true uses this.clearLine() for every line of lines.
 	 * @returns {string}
 	 */
 	cursorUp(lines = 1, clearLines = false) {
-		const str = `\x1b[${lines}A`
-		if (!clearLines) return str
-		this.write(str)
-		for (let i = 0; i < Math.abs(lines); i++) {
-			this.clearLine()
+		if (!this.isTTY) {
+			return ""
 		}
-		this.console.info(str)
+		const prev = this._previousLines.reduce(
+			(acc, str) => acc + this._calculateRows(str), 0
+		)
+
+		const maxLines = Math.min(lines, prev)
+		if (maxLines <= 0) return ''
+		const str = `\x1b[${lines}A`
+		if (clearLines) {
+			// this.write(str)
+			for (let i = 0; i < maxLines; i++) {
+				this.write(`\x1b[1A`)
+				this.clearLine()
+			}
+			// this.console.info(str)
+			return ''
+		}
+		this.write(str)
 		return str
 	}
 
@@ -660,8 +704,7 @@ export default class Logger {
 		if ("undefined" === typeof process?.stdout) {
 			return this.console.clear()
 		}
-		if ("" !== str) this.write(str)
-		this.write('\x1b[2K\r')
+		this.write(`${str}\x1b[2K\r`)
 	}
 
 	/**
@@ -688,6 +731,20 @@ export default class Logger {
 		const stripped = Logger.stripANSI(str)
 		const truncated = stripped.slice(0, width)
 		return truncated
+	}
+
+	/**
+	 * Fills a string to fit within a specified width and cut if str is wider.
+	 * @param {string} str
+	 * @param {number} [width=this.getWindowSize()[0]]
+	 * @param {string} [space=" "]
+	 * @returns {string}
+	 */
+	fill(str, width = this.getWindowSize()[0], space = " ") {
+		const length = stringWidth(Logger.stripANSI(str))
+		if (length > width) return this.cut(str, width)
+		const stripped = Logger.stripANSI(str)
+		return stripped + space.repeat(width - length)
 	}
 
 	/**

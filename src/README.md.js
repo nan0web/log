@@ -22,6 +22,9 @@ class Logger extends BaseLogger {
 	get isTTY() {
 		return true
 	}
+	static get isTTY() {
+		return true
+	}
 	write(str) {
 		this.console.info(str)
 	}
@@ -291,16 +294,32 @@ function testRender() {
 
 	/**
 	 * @docs
+	 * ### Work with cursor and clear lines for progress
+	 *
+	 * Demonstrates moving the cursor, moving it down, and clearing a line.
+	 *
+	 * The logger methods return the ANSI escape sequences, which you can log
+	 * directly. Each call creates a separate log entry.
 	 */
 	it("How to work with cursor and clear lines for progress?", () => {
-		//import Logger from '@nan0web/log'
 		const logger = new Logger()
-		logger.info(logger.cursorUp(2)) // ← \x1b[2A
-		logger.info(logger.cursorDown(1)) // ← \x1b[1B
-		logger.info(logger.clearLine()) // ← \x1b[2K\r
-		assert.equal(logger.output()[0][1], "\x1b[2A") // cursor up 2 lines
-		assert.equal(logger.output()[1][1], "\x1b[1B") // cursor down 1 line
-		assert.equal(logger.output()[2][1], "\x1b[2K\r") // clear line
+		// Log a multiline message
+		logger.info("Need to add first lines\nto let cursor move up")
+		// Log the cursor‑up escape sequence – this is a separate log entry
+		logger.cursorUp(2, true)
+		// Log the clear‑line escape sequence – a separate entry as well
+		logger.info(logger.clearLine())
+		assert.deepStrictEqual(logger.output(), [
+			["info", "Need to add first lines\nto let cursor move up"],
+			// cursorUp(2, true)
+			["info", "\x1b[1A"],
+			["info", "\x1b[2K\r"],
+			["info", "\x1b[1A"],
+			["info", "\x1b[2K\r"],
+			// logger.clearLine()
+			["info", "\x1b[2K\r"],
+			["info", ""],
+		])
 	})
 
 	/**

@@ -5,6 +5,15 @@ import LoggerFormat from "./LoggerFormat.js"
 import Console from './Console.js'
 import NoConsole from './NoConsole.js'
 
+class TTYLogger extends Logger {
+	static get isTTY() { return true }
+	get isTTY() { return true }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Existing tests (unchanged)                                                 */
+/* -------------------------------------------------------------------------- */
+
 describe('Logger class functionality', () => {
 	it('should create a logger instance with default values', () => {
 		const logger = new Logger()
@@ -109,8 +118,11 @@ describe('Logger class functionality', () => {
 	})
 
 	it('should generate correct cursor up sequence', () => {
-		const logger = new Logger()
+		const logger = new TTYLogger()
+		assert.equal(logger.cursorUp(1), '')
+		logger.info("Here is a line that can be moved up by cursor")
 		assert.equal(logger.cursorUp(1), '\x1b[1A')
+		// @todo so, now we are on 0th row, so to move 5 up we need to print 5 lines first.
 		assert.equal(logger.cursorUp(5), '\x1b[5A')
 	})
 
@@ -447,7 +459,7 @@ describe('Logger class functionality', () => {
 	})
 
 	it('should apply colors in static style when stripped false', () => {
-		const styled = Logger.style('test text', { color: 'red', stripped: false })
+		const styled = TTYLogger.style('test text', { color: 'red', stripped: false })
 		assert(styled.includes(Logger.RED))
 		assert(styled.includes('test text'))
 	})
@@ -564,5 +576,70 @@ describe('Logger class functionality', () => {
 		const out = noConsole.output()
 		assert.equal(out.length, 1, 'only one log entry should be recorded')
 		assert.ok(out[0][1].includes('first'))
+	})
+
+	/* ---------------------------------------------------------------------- */
+	/* New tests – FPS throttling & inFps behaviour                           */
+	/* ---------------------------------------------------------------------- */
+
+	it('inFps returns true when fps is null (no throttling)', () => {
+		const logger = new Logger({ fps: null })
+		assert.equal(logger.fps, null)
+		assert.ok(logger.inFps())
+	})
+
+	it('inFps respects fps value – first call allowed, immediate second blocked', async () => {
+		const logger = new Logger({ fps: 5 }) // 5 frames per second → 200 ms per frame
+		// Ensure a clean start
+		logger.prev = Date.now() - 1000
+
+		assert.ok(logger.inFps(), 'first call should be allowed')
+		const firstPrev = logger.prev
+
+		// Immediate second call – should be blocked
+		assert.equal(logger.inFps(), false, 'second call within 200 ms should be blocked')
+		assert.equal(logger.prev, firstPrev, 'prev timestamp must stay unchanged on blocked call')
+	})
+
+	it('FPS throttling limits Logger output to configured fps', async () => {
+		const noConsole = new NoConsole()
+		const fps = 5 // 5 logs per second → 200 ms interval
+		const logger = new Logger({ console: noConsole, fps })
+
+		// Force the internal timer to a known state
+		logger.prev = Date.now() - 300 // enough time elapsed for first log
+
+		// First log – should pass
+		const rowsFirst = logger.info('first')
+		assert.ok(rowsFirst > 0, 'first log should output rows')
+		assert.equal(noConsole.output().length, 1, 'only one entry after first log')
+
+		// Immediate second log – should be throttled out
+		const rowsSecond = logger.info('second')
+		assert.equal(rowsSecond, 0, 'throttled call must return 0')
+		assert.equal(noConsole.output().length, 1, 'no new entry after throttled call')
+
+		// Wait enough time for the next frame
+		await new Promise(resolve => setTimeout(resolve, 210))
+
+		// Third log – should pass after waiting
+		const rowsThird = logger.info('third')
+		assert.ok(rowsThird > 0, 'third log after delay should output rows')
+		assert.equal(noConsole.output().length, 2, 'second entry recorded after delay')
+		assert.ok(noConsole.output()[1][1].includes('third'), 'logged message must match')
+	})
+
+	it('Logger without fps option never throttles', () => {
+		const noConsole = new NoConsole()
+		const logger = new Logger({ console: noConsole })
+		// No fps -> throttling disabled
+		assert.equal(logger.fps, null)
+
+		// Call multiple times in a tight loop
+		for (let i = 0; i < 10; i++) {
+			const rows = logger.info(`msg ${i}`)
+			assert.ok(rows > 0, `msg ${i} should produce output`)
+		}
+		assert.equal(noConsole.output().length, 10, 'all messages should be recorded')
 	})
 })

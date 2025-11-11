@@ -42,6 +42,8 @@ export default class Logger {
         error: number;
         silent: number;
     };
+    /** @returns {boolean} */
+    static get isTTY(): boolean;
     /**
      * Create Logger instance from input
      * @param {Object|string} input
@@ -227,6 +229,20 @@ export default class Logger {
      */
     table(data: Array<any>, columns: string[], options?: object): string[];
     /**
+ * Hide the cursor in the terminal.
+ *
+ * @returns {string} ANSI escape sequence used to hide the cursor,
+ *   or an empty string when not in a TTY environment.
+ */
+    cursorHide(): string;
+    /**
+     * Show the cursor in the terminal.
+     *
+     * @returns {string} ANSI escape sequence used to show the cursor,
+     *   or an empty string when not in a TTY environment.
+     */
+    cursorShow(): string;
+    /**
      * Move cursor up in the terminal
      * @param {number} [lines] - Number of lines to move up
      * @param {boolean} [clearLines] - If true uses this.clearLine() for every line of lines.
@@ -265,6 +281,14 @@ export default class Logger {
      * @returns {string}
      */
     cut(str: string, width?: number | undefined): string;
+    /**
+     * Fills a string to fit within a specified width and cut if str is wider.
+     * @param {string} str
+     * @param {number} [width=this.getWindowSize()[0]]
+     * @param {string} [space=" "]
+     * @returns {string}
+     */
+    fill(str: string, width?: number | undefined, space?: string | undefined): string;
     /**
      * Erase the previous line by covering it with spaces or a character.
      * @param {string} char
