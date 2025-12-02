@@ -4,6 +4,13 @@ import LoggerFormat from "./LoggerFormat.js"
 import Console from "./Console.js"
 
 /**
+ * @typedef {Object} StyleOptions
+ * @property {string} [bgColor=""]
+ * @property {string} [color=""]
+ * @property {boolean} [stripped=false]
+ */
+
+/**
  * @typedef {Object} LoggerOptions
  * @property {string} [level='info'] - Minimum log level to output (debug|info|warn|error|silent)
  * @property {Console} [console=console] - Console instance to use for output
@@ -399,11 +406,11 @@ export default class Logger {
 	/**
 	 * Style a value with background and text colors
 	 * @param {any} value
-	 * @param {object} styleOptions
+	 * @param {StyleOptions} styleOptions
 	 * @returns {string}
 	 */
 	static style(value, styleOptions = {}) {
-		const { bgColor, color, stripped = false } = styleOptions
+		const { bgColor = "", color = "", stripped = false } = styleOptions
 		if (stripped) {
 			return String(value)
 		}

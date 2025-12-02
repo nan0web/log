@@ -1,4 +1,10 @@
 /**
+ * @typedef {Object} StyleOptions
+ * @property {string} [bgColor=""]
+ * @property {string} [color=""]
+ * @property {boolean} [stripped=false]
+ */
+/**
  * @typedef {Object} LoggerOptions
  * @property {string} [level='info'] - Minimum log level to output (debug|info|warn|error|silent)
  * @property {Console} [console=console] - Console instance to use for output
@@ -66,10 +72,10 @@ export default class Logger {
     /**
      * Style a value with background and text colors
      * @param {any} value
-     * @param {object} styleOptions
+     * @param {StyleOptions} styleOptions
      * @returns {string}
      */
-    static style(value: any, styleOptions?: object): string;
+    static style(value: any, styleOptions?: StyleOptions): string;
     /**
      * Strip ANSI escape codes from a string
      * @param {string} str
@@ -302,6 +308,11 @@ export default class Logger {
      */
     private _storeLine;
 }
+export type StyleOptions = {
+    bgColor?: string | undefined;
+    color?: string | undefined;
+    stripped?: boolean | undefined;
+};
 export type LoggerOptions = {
     /**
      * - Minimum log level to output (debug|info|warn|error|silent)
