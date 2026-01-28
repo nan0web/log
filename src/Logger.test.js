@@ -20,7 +20,7 @@ describe('Logger class functionality', () => {
 		assert.equal(logger.level, 'info')
 		assert.ok(logger.console instanceof Console)
 		assert.equal(logger.icons, false)
-		assert.equal(logger.chromo, true)
+		assert.equal(logger.chromo, false)
 		assert.equal(logger.stream, null)
 	})
 

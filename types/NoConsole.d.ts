@@ -18,7 +18,7 @@ export default class NoConsole {
     constructor(options?: {
         silent?: boolean | undefined;
         prefix?: any;
-    } | undefined);
+    });
     silent: boolean;
     /**
      * Clears all stored logs.

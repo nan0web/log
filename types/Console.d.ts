@@ -13,7 +13,7 @@ declare class LogConsole {
     constructor(options?: {
         prefix?: any;
         console?: Console | undefined;
-    } | undefined);
+    });
     /** @type {any} */
     prefix: any;
     console: Console;
@@ -62,12 +62,12 @@ declare class LogConsole {
      * Logs the count of calls to this method with a specific label
      * @param {string} [label='default'] - Label for the counter
      */
-    count(label?: string | undefined): void;
+    count(label?: string): void;
     /**
      * Resets the counter for a specific label
      * @param {string} [label='default'] - Label for the counter to reset
      */
-    countReset(label?: string | undefined): void;
+    countReset(label?: string): void;
     /**
      * Displays an interactive listing of object properties
      * @param {object} obj - Object to display
@@ -106,7 +106,7 @@ declare class LogConsole {
      * Starts a timer with the specified label
      * @param {string} [label='default'] - Label for the timer
      */
-    time(label?: string | undefined): void;
+    time(label?: string): void;
     /**
      * Logs a timestamp with the specified label
      * @param {string} label - Label for the timestamp
@@ -116,18 +116,18 @@ declare class LogConsole {
      * Stops a timer and logs the elapsed time
      * @param {string} [label='default'] - Label for the timer
      */
-    timeEnd(label?: string | undefined): void;
+    timeEnd(label?: string): void;
     /**
      * Logs the current value of a timer
      * @param {string} [label='default'] - Label for the timer
      */
-    timeLog(label?: string | undefined): void;
+    timeLog(label?: string): void;
     /**
      * Displays tabular data
      * @param {any} data - Data to display
      * @param {string[]} [columns] - Columns to display
      */
-    table(data: any, columns?: string[] | undefined): void;
+    table(data: any, columns?: string[]): void;
     /**
      * Logs a stack trace
      */

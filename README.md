@@ -1,8 +1,6 @@
 # @nan0web/log
 
-|Package name|[Status](https://github.com/nan0web/monorepo/blob/main/system.md#написання-сценаріїв)|Documentation|Test coverage|Features|Npm version|
-|---|---|---|---|---|---|
- |[@nan0web/log](https://github.com/nan0web/log/) |🟢 `98.9%` |🧪 [English 🏴󠁧󠁢󠁥󠁮󠁧󠁿](https://github.com/nan0web/log/blob/main/README.md)<br />[Українською 🇺🇦](https://github.com/nan0web/log/blob/main/docs/uk/README.md) |🟢 `94.2%` |✅ d.ts 📜 system.md 🕹️ playground |1.0.0 |
+<!-- %PACKAGE_STATUS% -->
 
 A cross-platform Logger class that wraps console methods for both Node.js and browsers
 with consistent interface and streaming support.
@@ -81,11 +79,11 @@ const logger = new Logger({
 		["success", { icon: "✅", color: Logger.GREEN }],
 	]
 })
-logger.debug("Debug message")     // ← \x1b[36m🔍 Debug message\x1b[0m
-logger.info("Info message")       // ← \x1b[32mℹ️  Info message\x1b[0m
-logger.warn("Warning message")    // ← \x1b[33m⚠️  Warning message\x1b[0m
-logger.error("Error message")     // ← \x1b[31m❌ Error message\x1b[0m
-logger.success("Success message") // ← \x1b[32m✅ Success message\x1b[0m
+logger.debug("Debug message")     // ← \x1b[36m🔍 Debug message
+logger.info("Info message")       // ← \x1b[32mℹ️  Info message
+logger.warn("Warning message")    // ← \x1b[33m⚠️  Warning message
+logger.error("Error message")     // ← \x1b[31m❌ Error message
+logger.success("Success message") // ← \x1b[32m✅ Success message
 ```
 ### Streaming Logs
 
@@ -149,18 +147,26 @@ How to style text with colors and background?
 import Logger from '@nan0web/log'
 const styled = Logger.style("Styled text", {
 	color: Logger.MAGENTA,
-	bgColor: "white"
+	bgColor: Logger.BG_WHITE
 })
 console.info(styled) // ← \x1b[35m\x1b[47mStyled text\x1b[0m
 ```
+### Work with cursor and clear lines for progress
+
+Demonstrates moving the cursor, moving it down, and clearing a line.
+
+The logger methods return the ANSI escape sequences, which you can log
+directly. Each call creates a separate log entry.
 
 How to work with cursor and clear lines for progress?
 ```js
-import Logger from '@nan0web/log'
 const logger = new Logger()
-logger.info(logger.cursorUp(2)) // ← \x1b[2A
-logger.info(logger.cursorDown(1)) // ← \x1b[1B
-logger.info(logger.clearLine()) // ← \x1b[2K\r
+// Log a multiline message
+logger.info("Need to add first lines\nto let cursor move up")
+// Log the cursor‑up escape sequence – this is a separate log entry
+logger.cursorUp(2, true)
+// Log the clear‑line escape sequence – a separate entry as well
+logger.info(logger.clearLine())
 ```
 ### Prefix Option
 

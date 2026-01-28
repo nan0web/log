@@ -23,24 +23,6 @@
  */
 export default class Logger {
     static LOGO: string;
-    static DIM: string;
-    static BLACK: string;
-    static RED: string;
-    static GREEN: string;
-    static YELLOW: string;
-    static BLUE: string;
-    static MAGENTA: string;
-    static CYAN: string;
-    static WHITE: string;
-    static BG_BLACK: string;
-    static BG_RED: string;
-    static BG_GREEN: string;
-    static BG_YELLOW: string;
-    static BG_BLUE: string;
-    static BG_MAGENTA: string;
-    static BG_CYAN: string;
-    static BG_WHITE: string;
-    static RESET: string;
     static LEVELS: {
         debug: number;
         info: number;
@@ -50,8 +32,26 @@ export default class Logger {
     };
     /** @returns {boolean} */
     static get isTTY(): boolean;
+    static get DIM(): "" | "\u001B[2m";
+    static get BLACK(): "" | "\u001B[30m";
+    static get RED(): "" | "\u001B[31m";
+    static get GREEN(): "" | "\u001B[32m";
+    static get YELLOW(): "" | "\u001B[33m";
+    static get BLUE(): "" | "\u001B[34m";
+    static get MAGENTA(): "" | "\u001B[35m";
+    static get CYAN(): "" | "\u001B[36m";
+    static get WHITE(): "" | "\u001B[37m";
+    static get BG_BLACK(): "" | "\u001B[40m";
+    static get BG_RED(): "" | "\u001B[41m";
+    static get BG_GREEN(): "" | "\u001B[42m";
+    static get BG_YELLOW(): "" | "\u001B[43m";
+    static get BG_BLUE(): "" | "\u001B[44m";
+    static get BG_MAGENTA(): "" | "\u001B[45m";
+    static get BG_CYAN(): "" | "\u001B[46m";
+    static get BG_WHITE(): "" | "\u001B[47m";
+    static get RESET(): "" | "\u001B[0m";
     /**
-     * Create Logger instance from input
+     * Create a Logger instance from input
      * @param {Object|string} input
      * @returns {Logger}
      */
@@ -235,11 +235,11 @@ export default class Logger {
      */
     table(data: Array<any>, columns: string[], options?: object): string[];
     /**
- * Hide the cursor in the terminal.
- *
- * @returns {string} ANSI escape sequence used to hide the cursor,
- *   or an empty string when not in a TTY environment.
- */
+     * Hide the cursor in the terminal.
+     *
+     * @returns {string} ANSI escape sequence used to hide the cursor,
+     *   or an empty string when not in a TTY environment.
+     */
     cursorHide(): string;
     /**
      * Show the cursor in the terminal.
@@ -254,7 +254,7 @@ export default class Logger {
      * @param {boolean} [clearLines] - If true uses this.clearLine() for every line of lines.
      * @returns {string}
      */
-    cursorUp(lines?: number | undefined, clearLines?: boolean | undefined): string;
+    cursorUp(lines?: number, clearLines?: boolean): string;
     /**
      * Move cursor down in the terminal
      * @param {number} lines - Number of lines to move down
@@ -266,9 +266,7 @@ export default class Logger {
      * @param {string} str
      */
     write(str: string): void;
-    /**
-     * Clear the entire terminal screen
-     */
+    /** Clear the entire terminal screen */
     clear(): void;
     /**
      * Clear the current line in terminal.
@@ -286,7 +284,7 @@ export default class Logger {
      * @param {number} [width=this.getWindowSize()[0]]
      * @returns {string}
      */
-    cut(str: string, width?: number | undefined): string;
+    cut(str: string, width?: number): string;
     /**
      * Fills a string to fit within a specified width and cut if str is wider.
      * @param {string} str
@@ -294,7 +292,7 @@ export default class Logger {
      * @param {string} [space=" "]
      * @returns {string}
      */
-    fill(str: string, width?: number | undefined, space?: string | undefined): string;
+    fill(str: string, width?: number, space?: string): string;
     /**
      * Erase the previous line by covering it with spaces or a character.
      * @param {string} char

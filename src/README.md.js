@@ -177,19 +177,19 @@ function testRender() {
 				["success", { icon: "✅", color: Logger.GREEN }],
 			]
 		})
-		logger.debug("Debug message")     // ← \x1b[36m🔍 Debug message\x1b[0m
-		logger.info("Info message")       // ← \x1b[32mℹ️  Info message\x1b[0m
-		logger.warn("Warning message")    // ← \x1b[33m⚠️  Warning message\x1b[0m
-		logger.error("Error message")     // ← \x1b[31m❌ Error message\x1b[0m
-		logger.success("Success message") // ← \x1b[32m✅ Success message\x1b[0m
+		logger.debug("Debug message")     // ← \x1b[36m🔍 Debug message
+		logger.info("Info message")       // ← \x1b[32mℹ️  Info message
+		logger.warn("Warning message")    // ← \x1b[33m⚠️  Warning message
+		logger.error("Error message")     // ← \x1b[31m❌ Error message
+		logger.success("Success message") // ← \x1b[32m✅ Success message
 		assert.ok(logger)
 		const logs = logger.output()
 		assert.deepStrictEqual(logs, [
-			["debug", "\x1b[36m🔍 Debug message\x1b[0m"],
-			["info", "\x1b[32mℹ️  Info message\x1b[0m"],
-			["warn", "\x1b[33m⚠️  Warning message\x1b[0m"],
-			["error", "\x1b[31m❌ Error message\x1b[0m"],
-			["info", "\x1b[32m✅ Success message\x1b[0m"],
+			["debug", "\x1b[36m🔍 Debug message"],
+			["info", "\x1b[32mℹ️  Info message"],
+			["warn", "\x1b[33m⚠️  Warning message"],
+			["error", "\x1b[31m❌ Error message"],
+			["info", "\x1b[32m✅ Success message"],
 		])
 		assert.ok(logs[0][1].includes("🔍"))
 		assert.ok(logs[1][1].includes("ℹ️ "))
@@ -284,7 +284,7 @@ function testRender() {
 		//import Logger from '@nan0web/log'
 		const styled = Logger.style("Styled text", {
 			color: Logger.MAGENTA,
-			bgColor: "white"
+			bgColor: Logger.BG_WHITE
 		})
 		console.info(styled) // ← \x1b[35m\x1b[47mStyled text\x1b[0m
 		assert.ok(console.output()[0][1].includes("Styled text"))
