@@ -27,7 +27,7 @@ logger.info('\n0. Exit')
 logger.info('========================')
 
 // Get user input
-logger.info('\nSelect an example to run:')
+logger.info(`\n${Logger.MAGENTA}Select an example to run:${Logger.RESET}`)
 process.stdin.setEncoding('utf8')
 process.stdin.on('readable', () => {
 	const input = process.stdin.read()

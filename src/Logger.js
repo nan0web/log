@@ -1,7 +1,11 @@
 import stringWidth from "string-width"
+
 import { empty } from "@nan0web/types"
+
 import LoggerFormat from "./LoggerFormat.js"
 import Console from "./Console.js"
+
+const isTTY = () => !("undefined" !== typeof process && !process.stdout?.isTTY)
 
 /**
  * @typedef {Object} StyleOptions
@@ -36,24 +40,24 @@ export default class Logger {
 		"                                                 ",
 		"",
 	].join("\n")
-	static DIM = '\x1b[2m'
-	static BLACK = "\x1b[30m"
-	static RED = '\x1b[31m'
-	static GREEN = '\x1b[32m'
-	static YELLOW = '\x1b[33m'
-	static BLUE = '\x1b[34m'
-	static MAGENTA = '\x1b[35m'
-	static CYAN = '\x1b[36m'
-	static WHITE = '\x1b[37m'
-	static BG_BLACK = '\x1b[40m'
-	static BG_RED = '\x1b[41m'
-	static BG_GREEN = '\x1b[42m'
-	static BG_YELLOW = '\x1b[43m'
-	static BG_BLUE = '\x1b[44m'
-	static BG_MAGENTA = '\x1b[45m'
-	static BG_CYAN = '\x1b[46m'
-	static BG_WHITE = '\x1b[47m'
-	static RESET = '\x1b[0m'
+	static DIM = isTTY() ? '\x1b[2m' : ''
+	static BLACK = isTTY() ? "\x1b[30m" : ''
+	static RED = isTTY() ? '\x1b[31m' : ''
+	static GREEN = isTTY() ? '\x1b[32m' : ''
+	static YELLOW = isTTY() ? '\x1b[33m' : ''
+	static BLUE = isTTY() ? '\x1b[34m' : ''
+	static MAGENTA = isTTY() ? '\x1b[35m' : ''
+	static CYAN = isTTY() ? '\x1b[36m' : ''
+	static WHITE = isTTY() ? '\x1b[37m' : ''
+	static BG_BLACK = isTTY() ? '\x1b[40m' : ''
+	static BG_RED = isTTY() ? '\x1b[41m' : ''
+	static BG_GREEN = isTTY() ? '\x1b[42m' : ''
+	static BG_YELLOW = isTTY() ? '\x1b[43m' : ''
+	static BG_BLUE = isTTY() ? '\x1b[44m' : ''
+	static BG_MAGENTA = isTTY() ? '\x1b[45m' : ''
+	static BG_CYAN = isTTY() ? '\x1b[46m' : ''
+	static BG_WHITE = isTTY() ? '\x1b[47m' : ''
+	static RESET = isTTY() ? '\x1b[0m' : ''
 	static LEVELS = {
 		debug: 0,
 		info: 1,
@@ -148,7 +152,7 @@ export default class Logger {
 	}
 	/** @returns {boolean} */
 	static get isTTY() {
-		return !("undefined" !== typeof process && !process.stdout?.isTTY)
+		return isTTY()
 	}
 
 	/**
@@ -687,10 +691,10 @@ export default class Logger {
 			return
 		}
 		// Strip ANSI if not TTY
-		if (!process.stdout.isTTY) {
+		if (!process.stdout?.isTTY) {
 			str = Logger.stripANSI(str)
 		}
-		process.stdout.write(str)
+		process.stdout?.write(str)
 	}
 
 	/**
@@ -723,7 +727,7 @@ export default class Logger {
 			return [80, 40]
 		}
 		// @ts-ignore
-		return process.stdout.getWindowSize()
+		return process?.stdout?.getWindowSize()
 	}
 
 	/**
